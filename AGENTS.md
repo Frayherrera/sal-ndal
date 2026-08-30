@@ -2,7 +2,16 @@
 
 ## Project Overview
 
-Laravel 12 + Blade + Tailwind CSS v4 PWA project. Early stage — only a landing page and default scaffolding exist. Spanish language throughout.
+Laravel 12 + Blade + Tailwind CSS v4 PWA project. Spanish language throughout.
+
+**Domain:** Sistema de gestión para **Santini** — comercializadora de condimentos y especias.
+
+**Modelo de negocio (flujo de inventario):**
+1. **Compra** materia prima (condimentos/especias) por **kilogramos**
+2. **Almacena** la materia prima
+3. **Prepara/empaca** en presentaciones comerciales (bolsas o frascos de 30 g, 50 g, 100 g)
+4. **Guarda** como producto terminado
+5. **Vende/distribuye** a tiendas, supermercados, restaurantes, mayoristas y otros clientes
 
 **Database name:** `santini_db` (MySQL on AWS RDS, not local)
 
