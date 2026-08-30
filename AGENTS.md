@@ -74,3 +74,7 @@ Uses new `@tailwindcss/vite` plugin. CSS entry `resources/css/app.css` uses v4 s
 - Comments and UI text in Spanish
 - 4-space indent (`.editorconfig`)
 - LF line endings
+
+## Design Skills
+
+When the user asks for UI design, visual design, aesthetics, typography, layout, color choices, or any frontend design work, **always use the `frontend-design` skill**. Load it before responding to design-related requests.
