@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Panel de Gestión - {{ config('app.name', 'Santini') }}</title>
-    <meta name="theme-color" content="#f59e0b">
+    <meta name="theme-color" content="#4A90E2">
     <link rel="manifest" href="/manifest.json">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
@@ -35,11 +35,11 @@
     </style>
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-gray-900 via-amber-900 to-orange-900">
+<body class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
     <!-- Decorative -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-20 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-20 right-10 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute top-20 left-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
     </div>
 
     <!-- Header -->
@@ -47,7 +47,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex items-center justify-center">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
                         <i class="fas fa-pepper-hot text-white"></i>
                     </div>
                     <span class="font-bold text-white text-lg">Santini</span>
@@ -55,7 +55,7 @@
 
                 <div class="flex items-center gap-6">
                     <nav class="hidden md:flex items-center gap-6">
-                        <a href="#" class="text-amber-300 border-b-2 border-amber-400 pb-1 text-sm font-medium">Dashboard</a>
+                        <a href="#" class="text-blue-300 border-b-2 border-blue-400 pb-1 text-sm font-medium">Dashboard</a>
                         <a href="#" class="text-white/70 hover:text-white transition-colors text-sm">Materia Prima</a>
                         <a href="#" class="text-white/70 hover:text-white transition-colors text-sm">Productos</a>
                         <a href="#" class="text-white/70 hover:text-white transition-colors text-sm">Ventas</a>
@@ -92,8 +92,8 @@
             <!-- Stat 1: Materia prima -->
             <div class="glass-card rounded-2xl p-6 animate-fade-in">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-seedling text-amber-400 text-xl"></i>
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-seedling text-blue-400 text-xl"></i>
                     </div>
                     <span class="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">+5%</span>
                 </div>
@@ -104,8 +104,8 @@
             <!-- Stat 2: Presentaciones -->
             <div class="glass-card rounded-2xl p-6 animate-delay-100">
                 <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-box-open text-orange-400 text-xl"></i>
+                    <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-box-open text-blue-400 text-xl"></i>
                     </div>
                     <span class="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">+12%</span>
                 </div>
@@ -144,7 +144,7 @@
             <div class="lg:col-span-2 glass-card rounded-2xl p-6 animate-fade-in">
                 <div class="flex items-center justify-between mb-6">
                     <h2 class="text-lg font-semibold text-white">Movimientos Recientes</h2>
-                    <button class="text-sm text-amber-300 hover:text-amber-200 transition-colors">Ver todo</button>
+                    <button class="text-sm text-blue-300 hover:text-blue-200 transition-colors">Ver todo</button>
                 </div>
 
                 <div class="space-y-4">
@@ -160,14 +160,14 @@
                     </div>
 
                     <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors">
-                        <div class="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <i class="fas fa-box-open text-amber-400"></i>
+                        <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-box-open text-blue-400"></i>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="text-sm text-white">Empaque de Pimentón — 200 frascos de 50 g</div>
                             <div class="text-xs text-white/40">Hace 5 horas · Línea de producción</div>
                         </div>
-                        <span class="text-sm font-medium text-amber-400">+200 u</span>
+                        <span class="text-sm font-medium text-blue-400">+200 u</span>
                     </div>
 
                     <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors">
@@ -182,14 +182,14 @@
                     </div>
 
                     <div class="flex items-center gap-4 p-3 rounded-xl hover:bg-white/5 transition-colors">
-                        <div class="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-                            <i class="fas fa-truck text-orange-400"></i>
+                        <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-truck text-blue-400"></i>
                         </div>
                         <div class="flex-1 min-w-0">
                             <div class="text-sm text-white">Despacho a restaurante — Curry (60 bolsas 30 g)</div>
                             <div class="text-xs text-white/40">Hace 2 días · Restaurante La Abuela</div>
                         </div>
-                        <span class="text-sm font-medium text-orange-400">-60 u</span>
+                        <span class="text-sm font-medium text-blue-400">-60 u</span>
                     </div>
                 </div>
             </div>
@@ -199,12 +199,12 @@
                 <h2 class="text-lg font-semibold text-white mb-6">Acciones Rápidas</h2>
 
                 <div class="space-y-3">
-                    <a href="#" class="flex items-center gap-3 p-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 transition-colors w-full text-left">
+                    <a href="#" class="flex items-center gap-3 p-3 rounded-xl bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 transition-colors w-full text-left">
                         <i class="fas fa-seedling"></i>
                         <span class="text-sm font-medium">Registrar Compra</span>
                     </a>
 
-                    <a href="#" class="flex items-center gap-3 p-3 rounded-xl bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 transition-colors w-full text-left">
+                    <a href="#" class="flex items-center gap-3 p-3 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 transition-colors w-full text-left">
                         <i class="fas fa-box-open"></i>
                         <span class="text-sm font-medium">Registrar Empaque</span>
                     </a>
@@ -223,7 +223,7 @@
                 <div class="mt-6 pt-6 border-t border-white/10">
                     <h3 class="text-sm font-medium text-white/60 mb-3">Capacidad de producción</h3>
                     <div class="w-full bg-white/10 rounded-full h-2 mb-2">
-                        <div class="bg-gradient-to-r from-amber-500 to-orange-500 h-2 rounded-full" style="width: 65%"></div>
+                        <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full" style="width: 65%"></div>
                     </div>
                     <div class="text-xs text-white/40">65% de la capacidad usada</div>
                 </div>

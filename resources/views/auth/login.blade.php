@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Iniciar Sesión - {{ config('app.name', 'Santini') }}</title>
-    <meta name="theme-color" content="#f59e0b">
+    <meta name="theme-color" content="#4A90E2">
     <link rel="manifest" href="/manifest.json">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
@@ -27,17 +27,17 @@
     </style>
 </head>
 
-<body class="min-h-screen bg-gradient-to-br from-gray-900 via-amber-900 to-orange-900 flex items-center justify-center p-4">
+<body class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
     <!-- Decorative elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-20 left-10 w-72 h-72 bg-amber-500/20 rounded-full blur-3xl"></div>
-        <div class="absolute bottom-20 right-10 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl"></div>
     </div>
 
     <div class="relative w-full max-w-md animate-fade-in">
         <!-- Logo -->
         <div class="text-center mb-8">
-            <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-amber-500/30">
+            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
                 <i class="fas fa-pepper-hot text-white text-2xl"></i>
             </div>
             <h1 class="text-2xl font-bold text-white">Bienvenido a Santini</h1>
@@ -70,7 +70,7 @@
                             value="{{ old('email') }}"
                             required
                             autofocus
-                            class="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                            class="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             placeholder="tu@email.com">
                     </div>
                 </div>
@@ -84,7 +84,7 @@
                             id="password"
                             name="password"
                             required
-                            class="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                            class="w-full pl-12 pr-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                             placeholder="••••••••">
                     </div>
                 </div>
@@ -92,14 +92,14 @@
                 <!-- Remember Me -->
                 <div class="flex items-center justify-between mb-6">
                     <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="remember" class="w-4 h-4 rounded border-white/30 bg-white/10 text-amber-500 focus:ring-amber-500 focus:ring-offset-0">
+                        <input type="checkbox" name="remember" class="w-4 h-4 rounded border-white/30 bg-white/10 text-blue-500 focus:ring-blue-500 focus:ring-offset-0">
                         <span class="text-sm text-white/70">Recordarme</span>
                     </label>
                 </div>
 
                 <!-- Submit -->
                 <button type="submit"
-                    class="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white py-3 rounded-xl font-semibold hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/30 flex items-center justify-center gap-2">
+                    class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2">
                     <i class="fas fa-sign-in-alt"></i>
                     Iniciar Sesión
                 </button>
