@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Alcaldía Municipal de Río Viejo, Bolívar - Ventanilla Única Digital</title>
+    <title>{{ config('app.name', 'Tu Proyecto') }}</title>
     <meta name="theme-color" content="#4A90E2">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -48,325 +48,376 @@
     <link href="/pwa/icons/ios/256.png" sizes="256x256" rel="apple-touch-startup-image">
     <link href="/pwa/icons/ios/192.png" sizes="192x192" rel="apple-touch-startup-image">
 
-
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Font Awesome (opcional, como respaldo) -->
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
-        /* Smooth scrolling */
         html {
             scroll-behavior: smooth;
         }
 
-        /* Animaciones personalizadas */
         @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(20px);
+                transform: translateY(30px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); }
+        }
+
         .animate-fade-in-up {
-            animation: fadeInUp 0.6s ease-out forwards;
+            animation: fadeInUp 0.8s ease-out forwards;
         }
 
-        .animate-fade-in-up-delay-1 {
-            animation: fadeInUp 0.6s ease-out 0.1s forwards;
+        .animate-delay-100 {
+            animation: fadeInUp 0.8s ease-out 0.1s forwards;
             opacity: 0;
         }
 
-        .animate-fade-in-up-delay-2 {
-            animation: fadeInUp 0.6s ease-out 0.2s forwards;
+        .animate-delay-200 {
+            animation: fadeInUp 0.8s ease-out 0.2s forwards;
             opacity: 0;
         }
 
-        .animate-fade-in-up-delay-3 {
-            animation: fadeInUp 0.6s ease-out 0.3s forwards;
+        .animate-delay-300 {
+            animation: fadeInUp 0.8s ease-out 0.3s forwards;
             opacity: 0;
         }
 
-        .hover-scale {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        .animate-delay-400 {
+            animation: fadeInUp 0.8s ease-out 0.4s forwards;
+            opacity: 0;
         }
 
-        .hover-scale:hover {
-            transform: translateY(-8px);
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
     </style>
 </head>
 
-<body class="min-h-screen bg-white">
-    <a href="{{ route('gestion') }}" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors inline-block">
-        Gestionar
-    </a>
+<body class="min-h-screen bg-gray-50">
 
     <!-- Header -->
-    <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <header class="fixed top-0 w-full z-50 glass">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center gap-3">
-                    <i class="fas fa-landmark w-8 h-8 text-blue-800 text-2xl"></i>
-                    <div>
-                        <div class="font-semibold text-blue-900">Alcaldía Municipal</div>
-                        <div class="text-sm text-blue-700">Río Viejo, Bolívar</div>
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-rocket text-white text-lg"></i>
                     </div>
+                    <span class="font-bold text-white text-lg">TuProyecto</span>
                 </div>
                 <nav class="hidden md:flex items-center gap-8">
-                    <a href="#inicio" class="text-blue-800 hover:text-red-600 transition-colors">Inicio</a>
-                    <a href="#servicios" class="text-blue-800 hover:text-red-600 transition-colors">Servicios</a>
-                    <a href="#tramites" class="text-blue-800 hover:text-red-600 transition-colors">Trámites</a>
-                    <a href="#contacto" class="text-blue-800 hover:text-red-600 transition-colors">Contacto</a>
+                    <a href="#inicio" class="text-white/80 hover:text-white transition-colors">Inicio</a>
+                    <a href="#caracteristicas" class="text-white/80 hover:text-white transition-colors">Características</a>
+                    <a href="#footer" class="text-white/80 hover:text-white transition-colors">Contacto</a>
                 </nav>
+                <a href="{{ route('gestion') }}"
+                    class="bg-white/10 hover:bg-white/20 text-white px-5 py-2 rounded-full text-sm font-medium transition-all border border-white/20">
+                    Abrir App
+                </a>
             </div>
         </div>
     </header>
 
     <!-- Hero -->
-    <section id="inicio" class="relative h-[600px] overflow-hidden">
-        <div class="absolute inset-0">
-            <img src="https://images.unsplash.com/photo-1700769670643-14361ffa6dfe?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwyfHxDb2xvbWJpYW4lMjB0b3duJTIwZ292ZXJubWVudCUyMGJ1aWxkaW5nJTIwYXJjaGl0ZWN0dXJlfGVufDF8fHx8MTc3NTg1Njk4OXww&ixlib=rb-4.1.0&q=80&w=1080"
-                alt="Alcaldía Municipal de Río Viejo" class="w-full h-full object-cover">
-            <div class="absolute inset-0 bg-gradient-to-r from-blue-900/95 to-blue-800/85"></div>
+    <section id="inicio" class="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+        <!-- Decorative elements -->
+        <div class="absolute inset-0 overflow-hidden">
+            <div class="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-3xl"></div>
         </div>
 
-        <div class="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
-            <div class="max-w-2xl text-white animate-fade-in-up">
-                <h1 class="text-5xl font-bold mb-4">Ventanilla Única Digital</h1>
-                <p class="text-xl mb-8 text-blue-100">
-                    Todos tus trámites municipales en un solo lugar. Rápido, seguro y sin filas.
-                </p>
-
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <a href=""
-                        class="bg-red-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors shadow-lg text-center">
-                        Iniciar Trámite
-                    </a>
-                    <a href=""
-                        class="bg-white text-blue-900 px-8 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors shadow-lg text-center">
-                        Consultar Estado
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Buscador -->
-    <section class="py-12 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="max-w-2xl mx-auto">
-                <form action="" method="GET" class="relative">
-                    <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-blue-400"></i>
-                    <input type="text" name="q" placeholder="Buscar trámite o servicio..."
-                        class="w-full pl-12 pr-4 py-4 rounded-lg border-2 border-blue-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500">
-                </form>
-            </div>
-        </div>
-    </section>
-
-    <!-- Servicios Principales -->
-    <section id="servicios" class="py-20">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="text-center mb-16 animate-fade-in-up">
-                <h2 class="text-4xl font-bold text-blue-900 mb-4">Servicios Principales</h2>
-                <p class="text-lg text-blue-700">Accede a los servicios más solicitados de manera rápida</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                @php
-                    $servicios = [
-                        ['icon' => 'fa-file-alt', 'titulo' => 'Trámites y Servicios', 'descripcion' => 'Realiza tus solicitudes sin filas', 'color' => 'bg-blue-50', 'iconColor' => 'text-blue-800'],
-                        ['icon' => 'fa-credit-card', 'titulo' => 'Pagos en Línea', 'descripcion' => 'Impuestos y servicios municipales', 'color' => 'bg-red-50', 'iconColor' => 'text-red-600'],
-                        ['icon' => 'fa-building', 'titulo' => 'Obras Públicas', 'descripcion' => 'Consulta proyectos en ejecución', 'color' => 'bg-blue-50', 'iconColor' => 'text-blue-800'],
-                        ['icon' => 'fa-users', 'titulo' => 'Atención Ciudadana', 'descripcion' => 'PQRS y solicitudes de ayuda', 'color' => 'bg-red-50', 'iconColor' => 'text-red-600'],
-                    ];
-                @endphp
-
-                @foreach($servicios as $index => $servicio)
-                    <div class="group cursor-pointer hover-scale animate-fade-in-up-delay-{{ $index }}"
-                        style="animation-delay: {{ $index * 0.1 }}s">
-                        <div
-                            class="bg-white p-6 rounded-xl border-2 border-blue-200 hover:border-red-500 hover:shadow-lg transition-all">
-                            <div
-                                class="{{ $servicio['color'] }} w-14 h-14 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                                <i class="fas {{ $servicio['icon'] }} w-7 h-7 {{ $servicio['iconColor'] }} text-2xl"></i>
-                            </div>
-                            <h3 class="font-semibold text-blue-900 mb-2">{{ $servicio['titulo'] }}</h3>
-                            <p class="text-sm text-blue-700 mb-4">{{ $servicio['descripcion'] }}</p>
-                            <div class="flex items-center text-red-600 text-sm font-medium">
-                                Acceder
-                                <i
-                                    class="fas fa-chevron-right w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform"></i>
-                            </div>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <!-- Trámites Frecuentes -->
-    <section id="tramites" class="py-20 bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div class="animate-fade-in-up">
-                    <h2 class="text-4xl font-bold text-blue-900 mb-4">Trámites Frecuentes</h2>
-                    <p class="text-lg text-blue-700 mb-8">
-                        Los certificados y documentos más solicitados por nuestros ciudadanos
+                    <div class="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 mb-6">
+                        <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                        <span class="text-white/90 text-sm">Nuevo — Disponible ahora</span>
+                    </div>
+
+                    <h1 class="text-5xl lg:text-7xl font-bold text-white mb-6 leading-tight">
+                        Transforma tu<br>
+                        <span class="gradient-text">experiencia digital</span>
+                    </h1>
+
+                    <p class="text-xl text-white/70 mb-8 max-w-lg leading-relaxed">
+                        Una aplicación diseñada para simplificar tu día a día. Rápida, intuitiva y siempre disponible.
                     </p>
 
-                    <div class="space-y-3">
-                        @php
-                            $tramites = [
-                                'Certificado de Residencia',
-                                'Paz y Salvo de Impuestos',
-                                'Permiso de Construcción',
-                                'Registro de Defunción',
-                                'Licencia de Funcionamiento',
-                                'Certificado de Nomenclatura',
-                            ];
-                        @endphp
+                    <div class="flex flex-col sm:flex-row gap-4">
+                        <a href="{{ route('gestion') }}"
+                            class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30 text-center animate-pulse-glow">
+                            <i class="fas fa-play mr-2"></i>Comenzar Ahora
+                        </a>
+                        <a href="#caracteristicas"
+                            class="bg-white/10 backdrop-blur-sm text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/20 transition-all border border-white/20 text-center">
+                            Conocer Más
+                        </a>
+                    </div>
 
-                        @foreach($tramites as $index => $tramite)
-                            <div class="bg-white p-4 rounded-lg border-2 border-blue-200 hover:border-red-500 hover:shadow-md transition-all cursor-pointer flex items-center justify-between group"
-                                style="animation: fadeInUp 0.4s ease-out {{ $index * 0.05 }}s forwards; opacity: 0;">
-                                <div class="flex items-center gap-3">
-                                    <i class="fas fa-file-alt text-blue-700"></i>
-                                    <span class="font-medium text-blue-900">{{ $tramite }}</span>
-                                </div>
-                                <i
-                                    class="fas fa-chevron-right text-red-500 group-hover:translate-x-1 transition-transform"></i>
-                            </div>
-                        @endforeach
+                    <div class="flex items-center gap-8 mt-12">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-white">100%</div>
+                            <div class="text-sm text-white/60">Gratuito</div>
+                        </div>
+                        <div class="w-px h-12 bg-white/20"></div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-white">24/7</div>
+                            <div class="text-sm text-white/60">Disponible</div>
+                        </div>
+                        <div class="w-px h-12 bg-white/20"></div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-white">PWA</div>
+                            <div class="text-sm text-white/60">Sin instalar</div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-blue-800 text-white p-8 rounded-2xl animate-fade-in-up">
-                    <i class="fas fa-clock w-12 h-12 mb-4 text-4xl"></i>
-                    <h3 class="text-2xl font-bold mb-4">Horarios de Atención</h3>
-
-                    <div class="space-y-4">
-                        <div>
-                            <div class="font-semibold mb-1">Lunes a Viernes</div>
-                            <div class="text-blue-100">8:00 AM - 12:00 PM</div>
-                            <div class="text-blue-100">2:00 PM - 6:00 PM</div>
-                        </div>
-
-                        <div class="border-t border-blue-600 pt-4">
-                            <div class="font-semibold mb-1">Sábados</div>
-                            <div class="text-blue-100">8:00 AM - 12:00 PM</div>
-                        </div>
-
-                        <div class="border-t border-blue-600 pt-4">
-                            <div class="bg-red-600 p-4 rounded-lg">
-                                <div class="font-semibold mb-2">
-                                    ⚡ Atención Virtual 24/7
+                <!-- Phone mockup -->
+                <div class="hidden lg:flex justify-center animate-fade-in-up animate-delay-300">
+                    <div class="relative animate-float">
+                        <div class="w-72 h-[550px] bg-gray-900 rounded-[3rem] border-4 border-gray-700 shadow-2xl overflow-hidden">
+                            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-2xl"></div>
+                            <div class="w-full h-full bg-gradient-to-b from-blue-500 to-purple-600 flex flex-col items-center justify-center text-white p-6">
+                                <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-4">
+                                    <i class="fas fa-rocket text-3xl"></i>
                                 </div>
-                                <div class="text-sm text-white">
-                                    Realiza tus trámites en línea en cualquier momento
+                                <div class="text-xl font-bold mb-1">TuProyecto</div>
+                                <div class="text-sm text-white/70 mb-6">Tu app favorita</div>
+                                <div class="w-full space-y-3">
+                                    <div class="bg-white/10 rounded-xl p-3 flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-bolt"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <div class="text-sm font-medium">Rápido</div>
+                                            <div class="text-xs text-white/60">Carga instantánea</div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-white/10 rounded-xl p-3 flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-shield-alt"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <div class="text-sm font-medium">Seguro</div>
+                                            <div class="text-xs text-white/60">Datos protegidos</div>
+                                        </div>
+                                    </div>
+                                    <div class="bg-white/10 rounded-xl p-3 flex items-center gap-3">
+                                        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-cloud"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <div class="text-sm font-medium">Offline</div>
+                                            <div class="text-xs text-white/60">Funciona sin internet</div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        <!-- Decorative dots -->
+                        <div class="absolute -top-4 -right-4 w-8 h-8 bg-yellow-400 rounded-full opacity-60"></div>
+                        <div class="absolute -bottom-4 -left-4 w-6 h-6 bg-pink-400 rounded-full opacity-60"></div>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Contacto -->
-    <section id="contacto" class="py-20">
+    <!-- Características -->
+    <section id="caracteristicas" class="py-24 bg-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="text-center mb-16 animate-fade-in-up">
-                <h2 class="text-4xl font-bold text-blue-900 mb-4">Contáctanos</h2>
-                <p class="text-lg text-blue-700">Estamos aquí para ayudarte</p>
+                <span class="text-blue-600 font-semibold text-sm uppercase tracking-wider">Características</span>
+                <h2 class="text-4xl lg:text-5xl font-bold text-gray-900 mt-3 mb-4">
+                    Todo lo que necesitas,<br>
+                    <span class="gradient-text">nada que no necesites</span>
+                </h2>
+                <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                    Diseñada con el usuario en mente. Cada función pensada para hacer tu vida más fácil.
+                </p>
             </div>
 
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="text-center animate-fade-in-up-delay-1">
-                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-map-marker-alt w-8 h-8 text-blue-800 text-2xl"></i>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="group p-8 rounded-2xl border border-gray-100 hover:border-blue-200 hover:shadow-xl transition-all duration-300 animate-fade-in-up animate-delay-100">
+                    <div class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 group-hover:scale-110 transition-all duration-300">
+                        <i class="fas fa-bolt text-blue-600 text-2xl group-hover:text-white transition-colors"></i>
                     </div>
-                    <h3 class="font-semibold text-blue-900 mb-2">Ubicación</h3>
-                    <p class="text-blue-700">
-                        Calle Principal #12-34<br>
-                        Río Viejo, Bolívar
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Ultra Rápido</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Carga instantánea y navegación fluida. Olvidate de los tiempos de espera.
                     </p>
                 </div>
 
-                <div class="text-center animate-fade-in-up-delay-2">
-                    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-phone w-8 h-8 text-red-600 text-2xl"></i>
+                <!-- Feature 2 -->
+                <div class="group p-8 rounded-2xl border border-gray-100 hover:border-purple-200 hover:shadow-xl transition-all duration-300 animate-fade-in-up animate-delay-200">
+                    <div class="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-purple-600 group-hover:scale-110 transition-all duration-300">
+                        <i class="fas fa-shield-alt text-purple-600 text-2xl group-hover:text-white transition-colors"></i>
                     </div>
-                    <h3 class="font-semibold text-blue-900 mb-2">Teléfono</h3>
-                    <p class="text-blue-700">
-                        (605) 123-4567<br>
-                        Línea gratuita: 018000-123456
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Seguro y Privado</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Tus datos están protegidos con encriptación de extremo a extremo.
                     </p>
                 </div>
 
-                <div class="text-center animate-fade-in-up-delay-3">
-                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <i class="fas fa-envelope w-8 h-8 text-blue-800 text-2xl"></i>
+                <!-- Feature 3 -->
+                <div class="group p-8 rounded-2xl border border-gray-100 hover:border-green-200 hover:shadow-xl transition-all duration-300 animate-fade-in-up animate-delay-300">
+                    <div class="w-14 h-14 bg-green-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-green-600 group-hover:scale-110 transition-all duration-300">
+                        <i class="fas fa-cloud-download-alt text-green-600 text-2xl group-hover:text-white transition-colors"></i>
                     </div>
-                    <h3 class="font-semibold text-blue-900 mb-2">Correo Electrónico</h3>
-                    <p class="text-blue-700">
-                        contacto@rioviejo-bolivar.gov.co<br>
-                        tramites@rioviejo-bolivar.gov.co
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Funciona Offline</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Sin conexión a internet? No hay problema. La app sigue funcionando.
                     </p>
                 </div>
+
+                <!-- Feature 4 -->
+                <div class="group p-8 rounded-2xl border border-gray-100 hover:border-orange-200 hover:shadow-xl transition-all duration-300 animate-fade-in-up animate-delay-100">
+                    <div class="w-14 h-14 bg-orange-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-orange-600 group-hover:scale-110 transition-all duration-300">
+                        <i class="fas fa-mobile-alt text-orange-600 text-2xl group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Multiplataforma</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Disponible en cualquier dispositivo. Celular, tablet o computador.
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="group p-8 rounded-2xl border border-gray-100 hover:border-pink-200 hover:shadow-xl transition-all duration-300 animate-fade-in-up animate-delay-200">
+                    <div class="w-14 h-14 bg-pink-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-pink-600 group-hover:scale-110 transition-all duration-300">
+                        <i class="fas fa-palette text-pink-600 text-2xl group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Diseño Moderno</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Interfaz intuitiva y elegante. Diseñada para que disfrutes usarla.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="group p-8 rounded-2xl border border-gray-100 hover:border-cyan-200 hover:shadow-xl transition-all duration-300 animate-fade-in-up animate-delay-300">
+                    <div class="w-14 h-14 bg-cyan-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-cyan-600 group-hover:scale-110 transition-all duration-300">
+                        <i class="fas fa-sync-alt text-cyan-600 text-2xl group-hover:text-white transition-colors"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-900 mb-3">Sincronización</h3>
+                    <p class="text-gray-600 leading-relaxed">
+                        Tus datos se sincronizan automáticamente entre todos tus dispositivos.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 relative overflow-hidden">
+        <div class="absolute inset-0">
+            <div class="absolute top-10 left-10 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-10 right-10 w-80 h-80 bg-purple-500/20 rounded-full blur-3xl"></div>
+        </div>
+        <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-4xl lg:text-5xl font-bold text-white mb-6">
+                ¿Listo para empezar?
+            </h2>
+            <p class="text-xl text-white/70 mb-10 max-w-2xl mx-auto">
+                Únete a los miles de usuarios que ya están transformando su experiencia digital.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{{ route('gestion') }}"
+                    class="bg-white text-gray-900 px-10 py-4 rounded-xl font-bold hover:bg-gray-100 transition-all shadow-lg text-center">
+                    <i class="fas fa-rocket mr-2"></i>Empezar Gratis
+                </a>
+                <a href="#caracteristicas"
+                    class="bg-white/10 backdrop-blur-sm text-white px-10 py-4 rounded-xl font-bold hover:bg-white/20 transition-all border border-white/20 text-center">
+                    Ver Demo
+                </a>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="bg-blue-950 text-white py-12">
+    <footer id="footer" class="bg-gray-900 text-white py-16">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid md:grid-cols-3 gap-8 mb-8">
+            <div class="grid md:grid-cols-3 gap-12 mb-12">
                 <div>
-                    <div class="flex items-center gap-2 mb-4">
-                        <i class="fas fa-landmark"></i>
-                        <span class="font-semibold">Alcaldía Municipal</span>
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-rocket text-white"></i>
+                        </div>
+                        <span class="font-bold text-xl">TuProyecto</span>
                     </div>
-                    <p class="text-gray-400 text-sm">
-                        Comprometidos con el desarrollo y bienestar de Río Viejo, Bolívar.
+                    <p class="text-gray-400 leading-relaxed">
+                        La aplicación que necesitabas. Simple, rápida y poderosa.
                     </p>
                 </div>
 
                 <div>
-                    <h4 class="font-semibold mb-4">Enlaces Rápidos</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" class="hover:text-white transition-colors">Transparencia</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Plan de Desarrollo</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Normatividad</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Convocatorias</a></li>
+                    <h4 class="font-semibold text-lg mb-6">Enlaces</h4>
+                    <ul class="space-y-3 text-gray-400">
+                        <li><a href="#inicio" class="hover:text-white transition-colors">Inicio</a></li>
+                        <li><a href="#caracteristicas" class="hover:text-white transition-colors">Características</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Documentación</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Soporte</a></li>
                     </ul>
                 </div>
 
                 <div>
-                    <h4 class="font-semibold mb-4">Atención al Ciudadano</h4>
-                    <ul class="space-y-2 text-sm text-gray-400">
-                        <li><a href="#" class="hover:text-white transition-colors">PQRS</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Notificaciones Judiciales</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Política de Privacidad</a></li>
-                        <li><a href="#" class="hover:text-white transition-colors">Términos de Uso</a></li>
-                    </ul>
+                    <h4 class="font-semibold text-lg mb-6">Conéctate</h4>
+                    <div class="flex gap-4">
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center hover:bg-white/20 transition-colors">
+                            <i class="fab fa-discord"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
 
-            <div class="border-t border-blue-900 pt-8 text-center text-sm text-blue-200">
-                © {{ date('Y') }} Alcaldía Municipal de Río Viejo, Bolívar. Todos los derechos reservados.
+            <div class="border-t border-gray-800 pt-8 text-center text-gray-500 text-sm">
+                &copy; {{ date('Y') }} TuProyecto. Todos los derechos reservados.
             </div>
         </div>
     </footer>
-   @vite(['resources/js/app.js'])
-   <script src="{{ asset('js/app.js') }}"></script>
+
+    @vite(['resources/js/app.js'])
+    <script src="{{ asset('js/app.js') }}"></script>
 
 </body>
 
