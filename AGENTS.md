@@ -75,6 +75,21 @@ Uses new `@tailwindcss/vite` plugin. CSS entry `resources/css/app.css` uses v4 s
 - 4-space indent (`.editorconfig`)
 - LF line endings
 
+## Design System
+
+**Todas las vistas deben seguir este estilo visual consistente:**
+
+- **Fondo:** Gradiente oscuro `bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900`
+- **Elementos:** Glass morphism con `background: rgba(255,255,255,0.08)`, `backdrop-filter: blur(12px)`, `border: 1px solid rgba(255,255,255,0.15)`
+- **Acentos:** Azul (`blue-500`) y morado (`purple-600`) en gradientes
+- **Iconos:** Font Awesome 6
+- **Tipografía:** Figtree (vía fonts.bunny.net)
+- **Componentes:** Bordes redondeados (`rounded-xl`, `rounded-2xl`), sombras con color (`shadow-blue-500/30`)
+- **Animaciones:** `fadeInUp` para entrada de elementos
+- **Tailwind:** Carga vía CDN (`<script src="https://cdn.tailwindcss.com">`)
+
+**Archivos de referencia:** `welcome.blade.php`, `auth/login.blade.php`
+
 ## Design Skills
 
-When the user asks for UI design, visual design, aesthetics, typography, layout, color choices, or any frontend design work, **always use the `frontend-design` skill**. Load it before responding to design-related requests.
+Cuando el usuario pida algo de diseño UI, diseño visual, estética, tipografía, layout, colores, o cualquier trabajo de frontend, **siempre usar la skill `frontend-design`**. Cargarla antes de responder.
