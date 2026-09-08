@@ -58,12 +58,12 @@ Uses new `@tailwindcss/vite` plugin. CSS entry `resources/css/app.css` uses v4 s
 
 ## PWA Setup
 
-- Manifest: `public/manifest.json` (app name "MobileApp")
-- Service worker: `public/sw.js` (cache-first, pre-caches only `/favicon.ico`)
-- Icons: `public/pwa/icons/` — android, ios, windows11 sets
-- SW registered in `resources/js/app.js`
+- Manifest: `public/manifest.json` (name "Santini", incluye `id`, `scope`, `start_url` `/`, `display_override`; iconos android/ios/windows11 + maskable apuntando a archivos reales)
+- Service worker: `public/sw.js` (network-first para navegación con fallback a cache, cache-first para assets; precachea manifest + favicon + iconos clave)
+- Icons: `public/pwa/icons/` — android (nombres `launchericon-48x48.png` con `x`), ios, windows11 (el dir en disco es `windows11`, no `windows`)
+- SW registrado en `resources/js/app.js`
 
-**Known issue:** `manifest.json` references `/pwa/icons/maskable-icons/` which doesn't exist on disk.
+**Ojo:** el manifest se genera a partir de los PNG reales (`public/pwa/icons`). Si regeneras los iconos, valida que `manifest.json` solo referencie archivos que existen (verificado: 112 rutas, 0 faltantes).
 
 ## Módulo Inventario
 
@@ -97,10 +97,11 @@ Arquitectura **Controller → Service → Model** (sin Livewire ni Alpine; JS pl
 
 ## Known Issues
 
-1. **Dual JS loading:** `welcome.blade.php` (y `layouts/app.blade.php`) cargan JS vía `@vite()` y `asset('js/app.js')` — el service worker se registra dos veces.
-2. **Missing maskable icons:** Manifest references icons in `public/pwa/icons/maskable-icons/` — directory missing.
-3. **Project name inconsistency:** `.env` says "Laravel", manifest says "MobileApp", HTML says "TuProyecto".
+1. ~~**Dual JS loading:** cargaban JS vía `@vite()` y `asset('js/app.js')` — el service worker se registraba dos veces.~~ Corregido: se usa solo `@vite(['resources/js/app.js'])`.
+2. ~~**Missing maskable icons:** los iconos maskable apuntaban a `maskable-icons/` inexistente.~~ Corregido: el manifest apunta a archivos android reales con `purpose: maskable`.
+3. **Project name inconsistency:** `.env` dice "Laravel", HTML dice "TuProyecto".
 4. **`gestion.blade.php` huérfano:** la vista standalone quedó sin uso tras apuntar `/gestion` al dashboard (se mantiene como referencia de diseño).
+5. **`public/build` desactualizado:** el bundle de Vite en `public/build/manifest.json` es viejo; `@vite()` sirve JS/CSS de hace varios commits. Rebuildear con `npm run build` (Node no está en el contenedor PHP — correr en el host).
 
 ## Testing
 

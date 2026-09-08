@@ -155,7 +155,6 @@
     </main>
 
     @vite(['resources/js/app.js'])
-    <script src="{{ asset('js/app.js') }}"></script>
     @stack('scripts')
 </body>
 
