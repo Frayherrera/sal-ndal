@@ -12,6 +12,7 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    @include('partials.theme')
     <style>
         html { scroll-behavior: smooth; }
         @keyframes fadeInUp {
@@ -28,6 +29,10 @@
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 flex items-center justify-center p-4">
+    <button type="button" data-theme-toggle class="theme-toggle fixed top-4 right-4 z-50" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
+        <i class="fas fa-sun theme-icon-sun text-lg"></i>
+        <i class="fas fa-moon theme-icon-moon text-lg"></i>
+    </button>
     <!-- Decorative elements -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
         <div class="absolute top-20 left-10 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl"></div>

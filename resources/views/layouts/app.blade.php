@@ -12,6 +12,7 @@
     <link href="https://fonts.bunny.net/css?family=figtree:400,600,700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    @include('partials.theme')
     <style>
         html { scroll-behavior: smooth; }
         body { font-family: 'Figtree', sans-serif; }
@@ -99,6 +100,10 @@
                 </div>
 
                 <div class="flex items-center gap-4">
+                    <button type="button" data-theme-toggle class="theme-toggle" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
+                        <i class="fas fa-sun theme-icon-sun text-lg"></i>
+                        <i class="fas fa-moon theme-icon-moon text-lg"></i>
+                    </button>
                     <div class="hidden sm:flex items-center gap-2 text-white/70">
                         <i class="fas fa-user-circle"></i>
                         <span class="text-sm">{{ Auth::user()->name ?? 'Usuario' }}</span>
