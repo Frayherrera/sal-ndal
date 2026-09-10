@@ -46,6 +46,8 @@
                         @if ($materia->movimientos()->exists())
                             <input type="hidden" name="unidad_base" value="{{ $materia->unidad_base }}">
                             <p class="text-white/40 text-xs mt-1">La unidad no cambia con movimientos registrados.</p>
+                        @else
+                            <p class="text-white/40 text-xs mt-1">Si cambias la unidad, el stock no se ajusta automáticamente.</p>
                         @endif
                     </div>
 
@@ -53,6 +55,15 @@
                         <label class="block text-sm font-medium text-white/80 mb-2">Stock mínimo</label>
                         <input type="number" step="0.01" min="0" name="stock_minimo" value="{{ old('stock_minimo', $materia->stock_minimo) }}"
                                class="input-glass">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-white/80 mb-2">Stock actual ({{ $materia->unidad_base }})</label>
+                        <input type="number" step="0.001" min="0" name="stock"
+                               value="{{ old('stock', $materia->unidad_base === 'kg' ? $materia->stock_kg() : $materia->stock_gramos()) }}"
+                               class="input-glass">
+                        <p class="text-white/40 text-xs mt-1">Se registrará como ajuste en el kardex</p>
+                        @error('stock') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
 
                     <div>

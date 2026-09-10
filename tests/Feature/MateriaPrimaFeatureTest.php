@@ -129,4 +129,106 @@ class MateriaPrimaFeatureTest extends TestCase
 
         $this->assertDatabaseHas('materias_primas', ['id' => $materia->id, 'activo' => false]);
     }
+
+    #[Test]
+    public function actualiza_stock_y_genera_ajuste_positivo(): void
+    {
+        $materia = MateriaPrima::factory()->create(['unidad_base' => 'kg']);
+        $materia->inventario()->create(['stock_gramos' => 0, 'costo_promedio' => 0]);
+
+        $this->actingAs($this->user)
+            ->put("/inventario/materia-prima/{$materia->id}", [
+                'nombre' => $materia->nombre,
+                'codigo' => $materia->codigo,
+                'unidad_base' => 'kg',
+                'stock' => 5,
+            ])
+            ->assertRedirect(route('inventario.materia-prima.index'));
+
+        $this->assertDatabaseHas('inventario_materia_prima', [
+            'materia_prima_id' => $materia->id,
+            'stock_gramos' => 5000,
+        ]);
+
+        $this->assertDatabaseHas('movimientos_inventario', [
+            'origen_type' => $materia->getMorphClass(),
+            'origen_id' => $materia->id,
+            'tipo' => 'ajuste_positivo',
+            'cantidad' => 5000,
+            'direccion' => 'entrada',
+            'saldo' => 5000,
+        ]);
+    }
+
+    #[Test]
+    public function actualiza_stock_y_genera_ajuste_negativo(): void
+    {
+        $materia = MateriaPrima::factory()->create(['unidad_base' => 'g']);
+        $materia->inventario()->create(['stock_gramos' => 3000, 'costo_promedio' => 0]);
+
+        $this->actingAs($this->user)
+            ->put("/inventario/materia-prima/{$materia->id}", [
+                'nombre' => $materia->nombre,
+                'codigo' => $materia->codigo,
+                'unidad_base' => 'g',
+                'stock' => 1000,
+            ])
+            ->assertRedirect(route('inventario.materia-prima.index'));
+
+        $this->assertDatabaseHas('inventario_materia_prima', [
+            'materia_prima_id' => $materia->id,
+            'stock_gramos' => 1000,
+        ]);
+
+        $this->assertDatabaseHas('movimientos_inventario', [
+            'origen_type' => $materia->getMorphClass(),
+            'origen_id' => $materia->id,
+            'tipo' => 'ajuste_negativo',
+            'cantidad' => 2000,
+            'direccion' => 'salida',
+            'saldo' => 1000,
+        ]);
+    }
+
+    #[Test]
+    public function no_genera_movimiento_si_stock_no_cambia(): void
+    {
+        $materia = MateriaPrima::factory()->create(['unidad_base' => 'g']);
+        $materia->inventario()->create(['stock_gramos' => 2000, 'costo_promedio' => 0]);
+
+        $this->actingAs($this->user)
+            ->put("/inventario/materia-prima/{$materia->id}", [
+                'nombre' => $materia->nombre,
+                'codigo' => $materia->codigo,
+                'unidad_base' => 'g',
+                'stock' => 2000,
+            ])
+            ->assertRedirect(route('inventario.materia-prima.index'));
+
+        $this->assertDatabaseHas('inventario_materia_prima', [
+            'materia_prima_id' => $materia->id,
+            'stock_gramos' => 2000,
+        ]);
+
+        $this->assertDatabaseMissing('movimientos_inventario', [
+            'origen_type' => $materia->getMorphClass(),
+            'origen_id' => $materia->id,
+        ]);
+    }
+
+    #[Test]
+    public function rechaza_stock_negativo(): void
+    {
+        $materia = MateriaPrima::factory()->create(['unidad_base' => 'g']);
+        $materia->inventario()->create(['stock_gramos' => 0, 'costo_promedio' => 0]);
+
+        $this->actingAs($this->user)
+            ->put("/inventario/materia-prima/{$materia->id}", [
+                'nombre' => $materia->nombre,
+                'codigo' => $materia->codigo,
+                'unidad_base' => 'g',
+                'stock' => -5,
+            ])
+            ->assertSessionHasErrors('stock');
+    }
 }

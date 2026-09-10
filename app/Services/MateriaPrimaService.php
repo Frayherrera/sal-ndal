@@ -10,6 +10,8 @@ use RuntimeException;
 
 class MateriaPrimaService
 {
+    public function __construct(protected MovimientoInventarioService $movimientoService) {}
+
     public function generarCodigo(): string
     {
         $prefijo = 'MP';
@@ -44,6 +46,32 @@ class MateriaPrimaService
         $mp->update($data);
 
         return $mp;
+    }
+
+    /**
+     * Actualiza el stock de una materia prima creando un movimiento de ajuste.
+     */
+    public function actualizarStock(MateriaPrima $mp, int $nuevosGramos): MateriaPrima
+    {
+        $stockActual = $mp->stock_gramos();
+        $diferencia = $nuevosGramos - $stockActual;
+
+        if ($diferencia === 0) {
+            return $mp;
+        }
+
+        $tipo = $diferencia > 0 ? 'ajuste_positivo' : 'ajuste_negativo';
+        $cantidad = abs($diferencia);
+
+        $this->movimientoService->registrar([
+            'tipo' => $tipo,
+            'origen' => $mp,
+            'cantidad' => $cantidad,
+            'motivo' => 'Ajuste manual desde edición de materia prima',
+            'user_id' => auth()->id(),
+        ]);
+
+        return $mp->fresh(['inventario']);
     }
 
     public function eliminar(MateriaPrima $mp): void

@@ -65,9 +65,21 @@ class MateriaPrimaController extends Controller
             'proveedor' => ['nullable', 'string', 'max:120'],
             'ubicacion' => ['nullable', 'string', 'max:120'],
             'activo' => ['sometimes', 'boolean'],
+            'stock' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        $unidadOriginal = $materia->unidad_base === 'kg' ? 'kg' : 'g';
+        $unidadNueva = $request->input('unidad_base');
+
         $this->service->actualizar($materia, $data);
+
+        if (isset($data['stock']) && $unidadNueva === $unidadOriginal) {
+            $nuevosGramos = $unidadNueva === 'kg'
+                ? (int) round($data['stock'] * 1000)
+                : (int) $data['stock'];
+
+            $this->service->actualizarStock($materia, $nuevosGramos);
+        }
 
         return redirect()->route('inventario.materia-prima.index')
             ->with('success', 'Materia prima actualizada correctamente.');
