@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Santini') — {{ config('app.name', 'Santini') }}</title>
+    <title>@yield('title', 'Santiny') — {{ config('app.name', 'Santiny') }}</title>
     <meta name="theme-color" content="#4A90E2">
     <link rel="manifest" href="/manifest.json">
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -91,10 +91,10 @@
                         <i class="fas fa-bars text-lg"></i>
                     </button>
                     <a href="{{ route('gestion') }}" class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                        <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/30">
                             <i class="fas fa-pepper-hot text-white"></i>
                         </div>
-                        <span class="font-bold text-white text-lg">Santini</span>
+                        <span class="font-bold text-white text-lg">Santiny</span>
                     </a>
                 </div>
 
@@ -130,7 +130,7 @@
                 <div class="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
                     <i class="fas fa-pepper-hot text-white"></i>
                 </div>
-                <span class="font-bold text-white text-base">Santini</span>
+                <span class="font-bold text-white text-base">Santiny</span>
             </a>
             <button type="button" id="sidebarClose" class="w-9 h-9 rounded-xl flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors" aria-label="Cerrar menú">
                 <i class="fas fa-times"></i>

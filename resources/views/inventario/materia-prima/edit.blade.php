@@ -88,6 +88,15 @@
                     </div>
                 </div>
 
+                @include('inventario.materia-prima._ingredientes-molido', [
+                    'ingredientes' => $ingredientes,
+                    'lineasIniciales' => old('lineas', $materia->detalleMolido->map(fn ($l) => [
+                        'ingrediente_id' => $l->ingrediente_id,
+                        'gramos_por_kg' => (float) $l->gramos_por_kg,
+                    ])->all()),
+                    'molidoEsMolido' => $materia->es_molido,
+                ])
+
                 <div class="mt-8 flex items-center gap-3">
                     <button type="submit"
                             class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30">

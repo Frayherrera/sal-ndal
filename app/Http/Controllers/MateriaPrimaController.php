@@ -4,13 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\MateriaPrima;
 use App\Services\MateriaPrimaService;
+use App\Services\MolidoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use RuntimeException;
 
 class MateriaPrimaController extends Controller
 {
-    public function __construct(protected MateriaPrimaService $service) {}
+    public function __construct(
+        protected MateriaPrimaService $service,
+        protected MolidoService $molidoService,
+    ) {}
 
     public function index(): View
     {
@@ -21,7 +26,9 @@ class MateriaPrimaController extends Controller
 
     public function create(): View
     {
-        return view('inventario.materia-prima.create');
+        $ingredientes = $this->molidoService->ingredientesDisponibles();
+
+        return view('inventario.materia-prima.create', compact('ingredientes'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -34,9 +41,21 @@ class MateriaPrimaController extends Controller
             'stock_minimo' => ['nullable', 'numeric', 'min:0'],
             'proveedor' => ['nullable', 'string', 'max:120'],
             'ubicacion' => ['nullable', 'string', 'max:120'],
+            'es_molido' => ['sometimes', 'boolean'],
+            'lineas' => ['nullable', 'array'],
+            'lineas.*.ingrediente_id' => ['nullable', 'exists:materias_primas,id'],
+            'lineas.*.gramos_por_kg' => ['nullable', 'numeric', 'gt:0'],
         ]);
 
-        $this->service->crear($data);
+        $lineas = $data['lineas'] ?? [];
+        unset($data['lineas']);
+        $data['es_molido'] = $request->boolean('es_molido');
+
+        try {
+            $this->service->crear($data, $lineas);
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         return redirect()->route('inventario.materia-prima.index')
             ->with('success', 'Materia prima registrada correctamente.');
@@ -44,14 +63,20 @@ class MateriaPrimaController extends Controller
 
     public function show(MateriaPrima $materia): View
     {
-        $materia->load(['inventario', 'movimientos' => fn ($q) => $q->latest('fecha')]);
+        $materia->load([
+            'inventario',
+            'detalleMolido.ingrediente',
+            'movimientos' => fn ($q) => $q->latest('fecha'),
+        ]);
 
         return view('inventario.materia-prima.show', compact('materia'));
     }
 
     public function edit(MateriaPrima $materia): View
     {
-        return view('inventario.materia-prima.edit', compact('materia'));
+        $ingredientes = $this->molidoService->ingredientesDisponibles($materia);
+
+        return view('inventario.materia-prima.edit', compact('materia', 'ingredientes'));
     }
 
     public function update(Request $request, MateriaPrima $materia): RedirectResponse
@@ -66,12 +91,24 @@ class MateriaPrimaController extends Controller
             'ubicacion' => ['nullable', 'string', 'max:120'],
             'activo' => ['sometimes', 'boolean'],
             'stock' => ['nullable', 'numeric', 'min:0'],
+            'es_molido' => ['sometimes', 'boolean'],
+            'lineas' => ['nullable', 'array'],
+            'lineas.*.ingrediente_id' => ['nullable', 'exists:materias_primas,id'],
+            'lineas.*.gramos_por_kg' => ['nullable', 'numeric', 'gt:0'],
         ]);
+
+        $lineas = $data['lineas'] ?? [];
+        unset($data['lineas']);
+        $data['es_molido'] = $request->boolean('es_molido');
 
         $unidadOriginal = $materia->unidad_base === 'kg' ? 'kg' : 'g';
         $unidadNueva = $request->input('unidad_base');
 
-        $this->service->actualizar($materia, $data);
+        try {
+            $this->service->actualizar($materia, $data, $lineas);
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
 
         if (isset($data['stock']) && $unidadNueva === $unidadOriginal) {
             $nuevosGramos = $unidadNueva === 'kg'
@@ -99,7 +136,7 @@ class MateriaPrimaController extends Controller
 
             return redirect()->route('inventario.materia-prima.index')
                 ->with('success', 'Materia prima eliminada.');
-        } catch (\RuntimeException $e) {
+        } catch (RuntimeException $e) {
             return redirect()->route('inventario.materia-prima.index')
                 ->with('error', $e->getMessage());
         }

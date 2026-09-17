@@ -245,6 +245,95 @@ class MovimientoInventarioService
     }
 
     /**
+     * Produce $gramos de una materia prima molida según su receta interna.
+     *
+     * En una sola transacción:
+     *  - registra un movimiento "consumo_produccion" (salida) por cada ingrediente
+     *    de la molienda (resta materia prima),
+     *  - registra un movimiento "producto_producido" (entrada) del molido.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<int, MovimientoInventario>
+     */
+    public function producirMolido(MateriaPrima $molido, int $gramos, array $data = []): array
+    {
+        if (! $molido->es_molido) {
+            throw new RuntimeException("La materia prima \"{$molido->nombre}\" no está marcada como molido.");
+        }
+
+        if ($gramos <= 0) {
+            throw new RuntimeException('La cantidad a producir debe ser mayor a cero.');
+        }
+
+        $ingredientes = $molido->detalleMolido()->with('ingrediente')->get();
+
+        if ($ingredientes->isEmpty()) {
+            throw new RuntimeException("El molido \"{$molido->nombre}\" no tiene ingredientes definidos. Defínelos antes de producir.");
+        }
+
+        $documento = $data['documento'] ?? null;
+        $fecha = $data['fecha'] ?? now();
+        $user_id = $data['user_id'] ?? auth()->id();
+        $kg = $gramos / 1000;
+
+        // Pre-validación de stock de todos los ingredientes antes de aplicar.
+        $requerimientos = $ingredientes->map(fn ($linea) => [
+            'materia' => $linea->ingrediente,
+            'gramos' => (int) round((float) $linea->gramos_por_kg * $kg),
+        ]);
+
+        foreach ($requerimientos as $req) {
+            if ($req['gramos'] <= 0) {
+                throw new RuntimeException('La cantidad a producir es demasiado pequeña para "'.($req['materia']?->nombre ?? 'un ingrediente').'". Aumenta la cantidad.');
+            }
+        }
+
+        if (! ConfiguracionInventario::permiteStockNegativo()) {
+            foreach ($requerimientos as $req) {
+                $mp = $req['materia'];
+                if ($mp && $mp->stock_gramos() < $req['gramos']) {
+                    throw new RuntimeException(
+                        "Stock insuficiente de \"{$mp->nombre}\": disponible {$mp->stock_gramos()} g, "
+                        ."se requieren {$req['gramos']} g para producir {$gramos} g de \"{$molido->nombre}\"."
+                    );
+                }
+            }
+        }
+
+        return DB::transaction(function () use ($molido, $gramos, $requerimientos, $documento, $fecha, $user_id) {
+            $movimientos = [];
+
+            foreach ($requerimientos as $req) {
+                $mp = $req['materia'];
+                if (! $mp) {
+                    continue;
+                }
+                $movimientos[] = $this->registrar([
+                    'tipo' => 'consumo_produccion',
+                    'origen' => $mp,
+                    'cantidad' => $req['gramos'],
+                    'documento' => $documento,
+                    'referencia' => "Molienda de {$molido->nombre}",
+                    'fecha' => $fecha,
+                    'user_id' => $user_id,
+                ]);
+            }
+
+            $movimientos[] = $this->registrar([
+                'tipo' => 'producto_producido',
+                'origen' => $molido,
+                'cantidad' => $gramos,
+                'documento' => $documento,
+                'referencia' => 'Producción de molido',
+                'fecha' => $fecha,
+                'user_id' => $user_id,
+            ]);
+
+            return $movimientos;
+        });
+    }
+
+    /**
      * Anula un movimiento creando la reversión espejo. No borra el original.
      */
     public function anular(MovimientoInventario $movimiento, ?string $motivo = null): MovimientoInventario

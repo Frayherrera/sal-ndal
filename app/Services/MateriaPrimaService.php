@@ -10,7 +10,10 @@ use RuntimeException;
 
 class MateriaPrimaService
 {
-    public function __construct(protected MovimientoInventarioService $movimientoService) {}
+    public function __construct(
+        protected MovimientoInventarioService $movimientoService,
+        protected MolidoService $molidoService,
+    ) {}
 
     public function generarCodigo(): string
     {
@@ -24,12 +27,16 @@ class MateriaPrimaService
         return $base;
     }
 
-    public function crear(array $data): MateriaPrima
+    /**
+     * @param  array<int, array{ingrediente_id?: int, gramos_por_kg?: mixed}>  $lineas
+     */
+    public function crear(array $data, array $lineas = []): MateriaPrima
     {
         $data['codigo'] ??= $this->generarCodigo();
         $data['activo'] = $data['activo'] ?? true;
+        $data['es_molido'] = $data['es_molido'] ?? false;
 
-        return DB::transaction(function () use ($data) {
+        return DB::transaction(function () use ($data, $lineas) {
             $mp = MateriaPrima::create($data);
             InventarioMateriaPrima::create([
                 'materia_prima_id' => $mp->id,
@@ -37,15 +44,30 @@ class MateriaPrimaService
                 'costo_promedio' => 0,
             ]);
 
+            if ($mp->es_molido) {
+                $this->molidoService->guardarIngredientes($mp, $lineas);
+            }
+
             return $mp;
         });
     }
 
-    public function actualizar(MateriaPrima $mp, array $data): MateriaPrima
+    /**
+     * @param  array<int, array{ingrediente_id?: int, gramos_por_kg?: mixed}>  $lineas
+     */
+    public function actualizar(MateriaPrima $mp, array $data, array $lineas = []): MateriaPrima
     {
-        $mp->update($data);
+        return DB::transaction(function () use ($mp, $data, $lineas) {
+            $mp->update($data);
 
-        return $mp;
+            if ($mp->es_molido) {
+                $this->molidoService->guardarIngredientes($mp, $lineas);
+            } else {
+                $this->molidoService->eliminarIngredientes($mp);
+            }
+
+            return $mp;
+        });
     }
 
     /**

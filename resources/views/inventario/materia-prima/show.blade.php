@@ -8,9 +8,20 @@
             <i class="fas fa-arrow-left"></i>
         </a>
         <div class="flex-1">
-            <h1 class="text-2xl font-bold text-white">{{ $materia->nombre }}</h1>
+            <h1 class="text-2xl font-bold text-white">
+                {{ $materia->nombre }}
+                @if ($materia->es_molido)
+                    <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-purple-500/20 text-purple-200 align-middle">Molido</span>
+                @endif
+            </h1>
             <p class="text-white/50 text-sm font-mono">{{ $materia->codigo }}</p>
         </div>
+        @if ($materia->es_molido)
+            <a href="{{ route('inventario.materia-prima.producir-molido', $materia) }}"
+               class="flex items-center gap-2 bg-green-500/20 text-green-300 px-4 py-2 rounded-xl font-medium hover:bg-green-500/30 transition-colors">
+                <i class="fas fa-mortar-pestle"></i> Producir Molido
+            </a>
+        @endif
         <a href="{{ route('inventario.materia-prima.edit', $materia) }}"
            class="flex items-center gap-2 bg-purple-500/20 text-purple-300 px-4 py-2 rounded-xl font-medium hover:bg-purple-500/30 transition-colors">
             <i class="fas fa-edit"></i> Editar
@@ -66,6 +77,25 @@
                 <div class="flex justify-between"><dt class="text-white/50">Ubicación</dt><dd class="text-white">{{ $materia->ubicacion ?? '—' }}</dd></div>
                 <div class="flex justify-between"><dt class="text-white/50">Status</dt><dd class="{{ $materia->activo ? 'text-green-300' : 'text-gray-300' }}">{{ $materia->activo ? 'Activo' : 'Inactivo' }}</dd></div>
             </dl>
+
+            @if ($materia->es_molido)
+                <div class="mt-6 pt-6 border-t border-white/10">
+                    <h3 class="text-sm font-semibold text-white/80 mb-3">Ingredientes por 1 kg</h3>
+                    @if ($materia->detalleMolido->isEmpty())
+                        <p class="text-white/40 text-xs">Sin ingredientes definidos.</p>
+                    @else
+                        <ul class="space-y-2 text-sm">
+                            @foreach ($materia->detalleMolido as $linea)
+                                <li class="flex justify-between">
+                                    <span class="text-white/70">{{ $linea->ingrediente?->nombre ?? 'N/D' }}</span>
+                                    <span class="text-white font-medium">{{ number_format($linea->gramos_por_kg, 3) }} g</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            @endif
+
             <div class="mt-6">
                 <a href="{{ route('inventario.movimientos.create', ['tipo' => 'compra_recepcion']) }}"
                    class="w-full flex items-center justify-center gap-2 bg-blue-500/20 text-blue-300 px-4 py-2.5 rounded-xl font-medium hover:bg-blue-500/30 transition-colors">

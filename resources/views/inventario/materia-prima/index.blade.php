@@ -40,7 +40,12 @@
                     @foreach ($materiasPrimas as $mp)
                         <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
                             <td class="p-4 font-mono text-blue-300">{{ $mp->codigo }}</td>
-                            <td class="p-4 text-white font-medium">{{ $mp->nombre }}</td>
+                            <td class="p-4 text-white font-medium">
+                                {{ $mp->nombre }}
+                                @if ($mp->es_molido)
+                                    <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-purple-500/20 text-purple-200">Molido</span>
+                                @endif
+                            </td>
                             <td class="p-4 text-white/60">{{ $mp->categoria ?? '—' }}</td>
                             <td class="p-4 text-right">
                                 <span class="text-white font-semibold">
@@ -62,6 +67,12 @@
                             </td>
                             <td class="p-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
+                                    @if ($mp->es_molido)
+                                        <a href="{{ route('inventario.materia-prima.producir-molido', $mp) }}" title="Producir molido"
+                                           class="w-8 h-8 flex items-center justify-center rounded-lg bg-green-500/20 text-green-300 hover:bg-green-500/30 transition-colors">
+                                            <i class="fas fa-mortar-pestle text-sm"></i>
+                                        </a>
+                                    @endif
                                     <a href="{{ route('inventario.materia-prima.show', $mp) }}" title="Ver kardex"
                                        class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-colors">
                                         <i class="fas fa-eye text-sm"></i>

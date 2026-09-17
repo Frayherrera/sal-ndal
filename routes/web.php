@@ -4,6 +4,7 @@ use App\Http\Controllers\ConteoFisicoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MateriaPrimaController;
+use App\Http\Controllers\MolidoController;
 use App\Http\Controllers\MovimientoInventarioController;
 use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\ProductoTerminadoController;
@@ -33,6 +34,12 @@ Route::middleware('auth')->group(function () {
         ->names('inventario.materia-prima');
     Route::post('inventario/materia-prima/{materia}/toggle', [MateriaPrimaController::class, 'toggleActivo'])
         ->name('inventario.materia-prima.toggle');
+
+    // Producción de materia prima molida
+    Route::get('inventario/materia-prima/{materia}/producir-molido', [MolidoController::class, 'create'])
+        ->name('inventario.materia-prima.producir-molido');
+    Route::post('inventario/materia-prima/{materia}/producir-molido', [MolidoController::class, 'store'])
+        ->name('inventario.materia-prima.producir-molido.store');
 
     // Productos terminados
     Route::resource('inventario/productos-terminados', ProductoTerminadoController::class)

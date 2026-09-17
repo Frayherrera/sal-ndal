@@ -21,6 +21,7 @@ class MateriaPrima extends Model
         'proveedor',
         'ubicacion',
         'activo',
+        'es_molido',
     ];
 
     protected function casts(): array
@@ -28,6 +29,7 @@ class MateriaPrima extends Model
         return [
             'stock_minimo' => 'decimal:2',
             'activo' => 'boolean',
+            'es_molido' => 'boolean',
         ];
     }
 
@@ -44,6 +46,21 @@ class MateriaPrima extends Model
     public function recetas()
     {
         return $this->hasMany(DetalleReceta::class, 'materia_prima_id');
+    }
+
+    public function detalleMolido()
+    {
+        return $this->hasMany(DetalleMolido::class, 'molido_id');
+    }
+
+    public function esIngredienteDe()
+    {
+        return $this->hasMany(DetalleMolido::class, 'ingrediente_id');
+    }
+
+    public function esMolido(): bool
+    {
+        return (bool) $this->es_molido;
     }
 
     public function esStockBajo(): bool
