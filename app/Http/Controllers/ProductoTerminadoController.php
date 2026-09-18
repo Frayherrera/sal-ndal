@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\InventarioProductoTerminado;
 use App\Models\ProductoTerminado;
 use App\Services\ProductoTerminadoService;
 use Illuminate\Http\RedirectResponse;
@@ -14,9 +15,24 @@ class ProductoTerminadoController extends Controller
 
     public function index(): View
     {
-        $productos = ProductoTerminado::with('inventario')->orderBy('nombre')->get();
+        $direccion = request('dir') === 'asc' ? 'asc' : 'desc';
+        $query = ProductoTerminado::with('inventario');
 
-        return view('inventario.productos-terminados.index', compact('productos'));
+        if (request('sort') === 'stock') {
+            $query->orderBy(
+                InventarioProductoTerminado::select('disponible')
+                    ->whereColumn('inventario_producto_terminado.producto_terminado_id', 'producto_terminados.id'),
+                $direccion
+            );
+        } else {
+            $query->orderBy('nombre');
+        }
+
+        return view('inventario.productos-terminados.index', [
+            'productos' => $query->get(),
+            'sort' => request('sort'),
+            'dir' => request('dir'),
+        ]);
     }
 
     public function create(): View

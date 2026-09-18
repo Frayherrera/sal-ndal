@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\InventarioMateriaPrima;
 use App\Models\MateriaPrima;
 use App\Services\MateriaPrimaService;
 use App\Services\MolidoService;
@@ -19,9 +20,24 @@ class MateriaPrimaController extends Controller
 
     public function index(): View
     {
-        $materiasPrimas = MateriaPrima::with('inventario')->orderBy('nombre')->get();
+        $direccion = request('dir') === 'asc' ? 'asc' : 'desc';
+        $query = MateriaPrima::with('inventario');
 
-        return view('inventario.materia-prima.index', compact('materiasPrimas'));
+        if (request('sort') === 'stock') {
+            $query->orderBy(
+                InventarioMateriaPrima::select('stock_gramos')
+                    ->whereColumn('inventario_materia_prima.materia_prima_id', 'materias_primas.id'),
+                $direccion
+            );
+        } else {
+            $query->orderBy('nombre');
+        }
+
+        return view('inventario.materia-prima.index', [
+            'materiasPrimas' => $query->get(),
+            'sort' => request('sort'),
+            'dir' => request('dir'),
+        ]);
     }
 
     public function create(): View

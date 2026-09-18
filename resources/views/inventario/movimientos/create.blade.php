@@ -49,7 +49,7 @@
                         <option value="">Seleccionar materia prima...</option>
                         @foreach ($materiasPrimas as $mp)
                             <option value="{{ $mp->id }}" data-kg="{{ $mp->stock_kg() }}" data-unidad="{{ $mp->unidad_base }}"
-                                    @selected(old('materia_prima_id') == $mp->id)>
+                                    @selected(old('materia_prima_id', request('materia_prima_id')) == $mp->id)>
                                 {{ $mp->nombre }} ({{ $mp->codigo }})
                             </option>
                         @endforeach

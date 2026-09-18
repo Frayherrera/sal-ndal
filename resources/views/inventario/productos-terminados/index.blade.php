@@ -8,11 +8,28 @@
             <h1 class="text-3xl font-bold text-white mb-2">Productos Terminados</h1>
             <p class="text-white/60">Presentaciones comerciales empacadas y listas para la venta.</p>
         </div>
-        <a href="{{ route('inventario.productos-terminados.create') }}"
-           class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30">
-            <i class="fas fa-plus"></i>
-            <span>Nuevo Producto</span>
-        </a>
+        <div class="flex items-center gap-3">
+            <div class="glass-card rounded-xl p-1.5 flex items-center gap-1">
+                <i class="fas fa-sort text-white/40 px-2"></i>
+                <a href="{{ route('inventario.productos-terminados.index') }}"
+                   class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ !request('sort') ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5' }}">
+                    Nombre
+                </a>
+                <a href="{{ route('inventario.productos-terminados.index', ['sort' => 'stock', 'dir' => 'desc']) }}"
+                   class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') !== 'asc' ? 'bg-blue-500/30 text-blue-200' : 'text-white/50 hover:bg-white/5' }}">
+                    <i class="fas fa-caret-down"></i> Stock
+                </a>
+                <a href="{{ route('inventario.productos-terminados.index', ['sort' => 'stock', 'dir' => 'asc']) }}"
+                   class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') === 'asc' ? 'bg-purple-500/30 text-purple-200' : 'text-white/50 hover:bg-white/5' }}">
+                    <i class="fas fa-caret-up"></i> Stock
+                </a>
+            </div>
+            <a href="{{ route('inventario.productos-terminados.create') }}"
+               class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30">
+                <i class="fas fa-plus"></i>
+                <span>Nuevo Producto</span>
+            </a>
+        </div>
     </div>
 
     <div class="glass-card rounded-2xl p-2 animate-delay-100 overflow-x-auto">
@@ -61,28 +78,39 @@
                                 </form>
                             </td>
                             <td class="p-4 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('inventario.productos-terminados.show', $pt) }}" title="Ver kardex"
-                                       class="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-500/20 text-blue-300 hover:bg-blue-500/30 transition-colors">
-                                        <i class="fas fa-eye text-sm"></i>
-                                    </a>
-                                    <a href="{{ route('inventario.productos-terminados.edit', $pt) }}" title="Editar"
-                                       class="w-8 h-8 flex items-center justify-center rounded-lg bg-purple-500/20 text-purple-300 hover:bg-purple-500/30 transition-colors">
-                                        <i class="fas fa-edit text-sm"></i>
-                                    </a>
-                                    @if (!$pt->movimientos()->exists())
-                                        <form method="POST" action="{{ route('inventario.productos-terminados.destroy', $pt) }}"
-                                              onsubmit="return confirm('¿Eliminar este producto?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" title="Eliminar"
-                                                    class="w-8 h-8 flex items-center justify-center rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors">
-                                                <i class="fas fa-trash text-sm"></i>
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </td>
+                                    <div class="relative inline-block dropdown">
+                                        <button type="button" class="dropdown-toggle w-9 h-9 inline-flex items-center justify-center rounded-lg glass text-white/60 hover:text-white transition-colors"
+                                                aria-haspopup="true" aria-expanded="false" title="Acciones">
+                                            <i class="fas fa-ellipsis-vertical text-sm"></i>
+                                        </button>
+                                        <div class="dropdown-menu hidden absolute right-0 top-full mt-2 z-50 w-52 rounded-xl menu-glass overflow-hidden">
+                                            <a href="{{ route('inventario.productos-terminados.show', $pt) }}"
+                                               class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 transition-colors">
+                                                <i class="fas fa-eye w-4 text-center text-blue-300"></i>
+                                                Ver kardex
+                                            </a>
+                                            <a href="{{ route('inventario.productos-terminados.edit', $pt) }}"
+                                               class="flex items-center gap-3 px-4 py-2.5 text-sm text-white/80 hover:bg-white/10 transition-colors">
+                                                <i class="fas fa-edit w-4 text-center text-purple-300"></i>
+                                                Editar
+                                            </a>
+                                            @if (!$pt->movimientos()->exists())
+                                                <div class="border-t border-white/10">
+                                                    <form method="POST" action="{{ route('inventario.productos-terminados.destroy', $pt) }}"
+                                                          onsubmit="return confirm('¿Eliminar este producto?')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit"
+                                                                class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-300 hover:bg-red-500/10 transition-colors">
+                                                            <i class="fas fa-trash w-4 text-center"></i>
+                                                            Eliminar
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -90,3 +118,37 @@
         @endif
     </div>
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    document.addEventListener('click', function (e) {
+        document.querySelectorAll('.dropdown').forEach(function (wrap) {
+            var toggle = wrap.querySelector('.dropdown-toggle');
+            var menu = wrap.querySelector('.dropdown-menu');
+
+            if (wrap.contains(e.target)) {
+                if (toggle.contains(e.target)) {
+                    menu.classList.toggle('hidden');
+                    toggle.setAttribute('aria-expanded', menu.classList.contains('hidden') ? 'false' : 'true');
+                }
+            } else {
+                menu.classList.add('hidden');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.dropdown-menu').forEach(function (menu) {
+                menu.classList.add('hidden');
+            });
+            document.querySelectorAll('.dropdown-toggle').forEach(function (toggle) {
+                toggle.setAttribute('aria-expanded', 'false');
+            });
+        }
+    });
+})();
+</script>
+@endpush

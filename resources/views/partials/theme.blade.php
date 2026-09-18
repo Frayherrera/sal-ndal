@@ -42,6 +42,20 @@
     html.light .glass { background: rgba(255, 255, 255, .68); border-color: rgba(100, 116, 139, .28); }
     html.light .glass-card { background: rgba(255, 255, 255, .58); border-color: rgba(100, 116, 139, .22); }
 
+    /* Menús desplegables */
+    .menu-glass {
+        background: rgba(15, 23, 42, 0.92);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+    html.light .menu-glass {
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(14px);
+        border: 1px solid rgba(100, 116, 139, 0.3);
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+    }
+
     /* Inputs */
     html.light .input-glass { background: rgba(255, 255, 255, .85); border-color: rgba(100, 116, 139, .38); color: #1e293b; }
     html.light .input-glass::placeholder { color: #94a3b8; }
@@ -74,6 +88,8 @@
     html.light .text-red-300, html.light .text-red-400 { color: #dc2626; }
     html.light .text-yellow-200 { color: #b45309; }
     html.light .text-yellow-300, html.light .text-yellow-400 { color: #d97706; }
+    html.light .text-amber-200 { color: #b45309; }
+    html.light .text-amber-300, html.light .text-amber-400 { color: #d97706; }
     html.light .text-gray-300 { color: #64748b; }
     html.light .text-gray-400, html.light .text-gray-500 { color: #94a3b8; }
     html.light .text-gray-600 { color: #475569; }

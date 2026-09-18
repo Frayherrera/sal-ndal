@@ -19,5 +19,8 @@ class DatabaseSeeder extends Seeder
                 'password' => env('ADMIN_PASSWORD', 'password'),
             ]
         );
+
+        $this->call(MateriaPrimaSeeder::class);
+        $this->call(ProductoTerminadoSeeder::class);
     }
 }
