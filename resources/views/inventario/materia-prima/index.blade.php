@@ -3,12 +3,12 @@
 @section('title', 'Materias Primas')
 
 @section('content')
-    <div class="flex items-center justify-between mb-8 animate-fade-in">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 animate-fade-in">
         <div>
             <h1 class="text-3xl font-bold text-white mb-2">Materias Primas</h1>
             <p class="text-white/60">Condimentos y especias almacenados para producción.</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <div class="glass-card rounded-xl p-1.5 flex items-center gap-1">
                 <i class="fas fa-sort text-white/40 px-2"></i>
                 <a href="{{ route('inventario.materia-prima.index') }}"
@@ -44,26 +44,26 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-white/50 border-b border-white/10">
-                        <th class="p-4">Código</th>
+                        <th class="p-4 hidden sm:table-cell">Código</th>
                         <th class="p-4">Nombre</th>
-                        <th class="p-4">Categoría</th>
+                        <th class="p-4 hidden md:table-cell">Categoría</th>
                         <th class="p-4 text-right">Stock</th>
-                        <th class="p-4 text-right">Mínimo</th>
-                        <th class="p-4 text-center">Estado</th>
+                        <th class="p-4 text-right hidden md:table-cell">Mínimo</th>
+                        <th class="p-4 text-center hidden sm:table-cell">Estado</th>
                         <th class="p-4 text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($materiasPrimas as $mp)
                         <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                            <td class="p-4 font-mono text-blue-300">{{ $mp->codigo }}</td>
+                            <td class="p-4 font-mono text-blue-300 hidden sm:table-cell">{{ $mp->codigo }}</td>
                             <td class="p-4 text-white font-medium">
                                 {{ $mp->nombre }}
                                 @if ($mp->es_molido)
                                     <span class="ml-2 px-2 py-0.5 rounded-full text-xs bg-purple-500/20 text-purple-200">Molido</span>
                                 @endif
                             </td>
-                            <td class="p-4 text-white/60">{{ $mp->categoria ?? '—' }}</td>
+                            <td class="p-4 text-white/60 hidden md:table-cell">{{ $mp->categoria ?? '—' }}</td>
                             <td class="p-4 text-right">
                                 <span class="text-white font-semibold">
                                     {{ number_format($mp->stock_kg(), ($mp->unidad_base === 'g' ? 0 : 2)) }} {{ $mp->unidad_base }}
@@ -72,8 +72,8 @@
                                     <span class="block text-xs text-yellow-400 mt-0.5">Bajo</span>
                                 @endif
                             </td>
-                            <td class="p-4 text-right text-white/60">{{ number_format($mp->stock_minimo, 2) }} {{ $mp->unidad_base }}</td>
-                            <td class="p-4 text-center">
+                            <td class="p-4 text-right text-white/60 hidden md:table-cell">{{ number_format($mp->stock_minimo, 2) }} {{ $mp->unidad_base }}</td>
+                            <td class="p-4 text-center hidden sm:table-cell">
                                 <form method="POST" action="{{ route('inventario.materia-prima.toggle', $mp) }}">
                                     @csrf
                                     <button type="submit"

@@ -3,12 +3,12 @@
 @section('title', 'Productos Terminados')
 
 @section('content')
-    <div class="flex items-center justify-between mb-8 animate-fade-in">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 animate-fade-in">
         <div>
             <h1 class="text-3xl font-bold text-white mb-2">Productos Terminados</h1>
             <p class="text-white/60">Presentaciones comerciales empacadas y listas para la venta.</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex flex-wrap items-center gap-3">
             <div class="glass-card rounded-xl p-1.5 flex items-center gap-1">
                 <i class="fas fa-sort text-white/40 px-2"></i>
                 <a href="{{ route('inventario.productos-terminados.index') }}"
@@ -44,23 +44,23 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left text-white/50 border-b border-white/10">
-                        <th class="p-4">Código</th>
+                        <th class="p-4 hidden sm:table-cell">Código</th>
                         <th class="p-4">Nombre</th>
-                        <th class="p-4">Presentación</th>
-                        <th class="p-4 text-right">Peso neto</th>
+                        <th class="p-4 hidden md:table-cell">Presentación</th>
+                        <th class="p-4 text-right hidden md:table-cell">Peso neto</th>
                         <th class="p-4 text-right">Disponible</th>
                         <th class="p-4 text-right">Precio</th>
-                        <th class="p-4 text-center">Estado</th>
+                        <th class="p-4 text-center hidden sm:table-cell">Estado</th>
                         <th class="p-4 text-right">Acciones</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($productos as $pt)
                         <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                            <td class="p-4 font-mono text-blue-300">{{ $pt->codigo }}</td>
+                            <td class="p-4 font-mono text-blue-300 hidden sm:table-cell">{{ $pt->codigo }}</td>
                             <td class="p-4 text-white font-medium">{{ $pt->nombre }}</td>
-                            <td class="p-4 text-white/60 capitalize">{{ $pt->presentacion ?? '—' }}</td>
-                            <td class="p-4 text-right text-white/60">{{ number_format($pt->peso_neto, 0) }} g</td>
+                            <td class="p-4 text-white/60 capitalize hidden md:table-cell">{{ $pt->presentacion ?? '—' }}</td>
+                            <td class="p-4 text-right text-white/60 hidden md:table-cell">{{ number_format($pt->peso_neto, 0) }} g</td>
                             <td class="p-4 text-right">
                                 <span class="text-white font-semibold">{{ number_format($pt->stock_disponible()) }} u</span>
                                 @if ($pt->esStockBajo())
@@ -68,7 +68,7 @@
                                 @endif
                             </td>
                             <td class="p-4 text-right text-white/80">${{ number_format($pt->precio_venta, 2) }}</td>
-                            <td class="p-4 text-center">
+                            <td class="p-4 text-center hidden sm:table-cell">
                                 <form method="POST" action="{{ route('inventario.productos-terminados.toggle', $pt) }}">
                                     @csrf
                                     <button type="submit"
