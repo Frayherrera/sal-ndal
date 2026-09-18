@@ -49,7 +49,7 @@
                         <th class="p-4 hidden md:table-cell">Presentación</th>
                         <th class="p-4 text-right hidden md:table-cell">Peso neto</th>
                         <th class="p-4 text-right">Disponible</th>
-                        <th class="p-4 text-right">Precio</th>
+                        <th class="p-4 text-right">Valor total</th>
                         <th class="p-4 text-center hidden sm:table-cell">Estado</th>
                         <th class="p-4 text-right">Acciones</th>
                     </tr>
@@ -67,7 +67,7 @@
                                     <span class="block text-xs text-yellow-400 mt-0.5">Bajo</span>
                                 @endif
                             </td>
-                            <td class="p-4 text-right text-white/80">${{ number_format($pt->precio_venta, 2) }}</td>
+                            <td class="p-4 text-right text-white/80">${{ number_format($pt->valor_total(), 2) }}</td>
                             <td class="p-4 text-center hidden sm:table-cell">
                                 <form method="POST" action="{{ route('inventario.productos-terminados.toggle', $pt) }}">
                                     @csrf

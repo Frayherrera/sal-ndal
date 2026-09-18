@@ -11,6 +11,11 @@ class ProductoTerminado extends Model
 {
     use HasFactory;
 
+    /**
+     * Cantidad de unidades individuales por cada paquete comercial.
+     */
+    public const UNIDADES_POR_PAQUETE = 20;
+
     protected $fillable = [
         'codigo',
         'nombre',
@@ -64,6 +69,16 @@ class ProductoTerminado extends Model
     public function stock_disponible(): int
     {
         return $this->inventario?->disponible ?? 0;
+    }
+
+    public function precio_unitario(): float
+    {
+        return (float) $this->precio_venta / self::UNIDADES_POR_PAQUETE;
+    }
+
+    public function valor_total(): float
+    {
+        return $this->precio_unitario() * $this->stock_disponible();
     }
 
     public function stock_comprometido(): int

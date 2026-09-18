@@ -10,18 +10,16 @@ use Illuminate\Support\Facades\DB;
 class ProductoTerminadoSeeder extends Seeder
 {
     /**
-     * Cada "Cant. ESP/B2C" de la hoja representa un PAQUETE de esta cantidad
-     * de unidades; el stock disponible se almacena en unidades individuales.
-     */
-    private const UNIDADES_POR_PAQUETE = 20;
-
-    /**
      * [codigo, nombre, categoria (ESP|B2C), peso_neto (g), precio_venta, paquetes]
      *
      * Precios unitarios ("VR Disp") interpretados en COP, best-effort; los
      * "VR TOTAL" de la hoja tienen errores y se ignoran. Presentaciones sin
      * gramaje se omiten. `Almendra`, `Miel`, `Mostaza`, etc. con datos solo
      * en una columna generan un único registro.
+     *
+     * Cada "Cant. ESP/B2C" de la hoja representa un PAQUETE de esta cantidad
+     * de unidades; el stock disponible se almacena en unidades individuales
+     * (ver ProductoTerminado::UNIDADES_POR_PAQUETE).
      */
     private const DATOS = [
         ['PT-002A', 'ACHIOTE PEPA', 'ESP', 15, 24000, 14],
@@ -166,7 +164,7 @@ class ProductoTerminadoSeeder extends Seeder
 
                 InventarioProductoTerminado::updateOrCreate(
                     ['producto_terminado_id' => $pt->id],
-                    ['disponible' => $paquetes * self::UNIDADES_POR_PAQUETE]
+                    ['disponible' => $paquetes * ProductoTerminado::UNIDADES_POR_PAQUETE]
                 );
             }
         });
