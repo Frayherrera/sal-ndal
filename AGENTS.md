@@ -1,17 +1,17 @@
-# AGENTS.md — sal-ndal
+# sal-ndal - Sistema de gestión para Santini
 
-## Project Overview
+## Proyecto
 
 Laravel 12 + Blade + Tailwind CSS v4 PWA project. Spanish language throughout.
 
-**Domain:** Sistema de gestión para **Santini** — comercializadora de condimentos y especias.
+**Domain:** Santini — comercializadora de condimentos y especias.
 
-**Modelo de negocio (flujo de inventario):**
-1. **Compra** materia prima (condimentos/especias) por **kilogramos**
-2. **Almacena** la materia prima
-3. **Prepara/empaca** en presentaciones comerciales (bolsas o frascos de 30 g, 50 g, 100 g)
-4. **Guarda** como producto terminado
-5. **Vende/distribuye** a tiendas, supermercados, restaurantes, mayoristas y otros clientes
+**Business model (inventory flow):**
+1. **Purchase** raw materials (spices/condiments) by **kilograms**
+2. **Store** the raw materials
+3. **Prepare/pack** into commercial presentations (bags or 30 g, 50 g, 100 g jars)
+4. **Save** as finished product
+5. **Sell/distribute** to stores, supermarkets, restaurants, wholesalers and other clients
 
 **Database name:** `santini_db` (MySQL on AWS RDS, not local)
 
@@ -95,6 +95,43 @@ Arquitectura **Controller → Service → Model** (sin Livewire ni Alpine; JS pl
 - Vistas en `resources/views/inventario/**` usando el layout compartido `layouts/app.blade.php`.
 - El input de cantidad (`movimientos/create`) usa `min="0"` + `step` dinámico (0.001 para MP en kg, 1 para PT) para evitar el error de validación HTML de step (p.ej. exigir 5.001 al escribir 5).
 
+## Módulo Ventas
+
+Venta de producto terminado **por unidad** con contado/ crédITO, abonos, cartera y reportes. Misma arquitectura Controller → Service → Model, JS plano.
+
+**Cambio a unidades:** El catálogo conserva su `precio_venta` por paquete (20 u), así que el precio unitario se deriva como `precio_venta ÷ 20` y el stock se descuenta en unidades. El modelo `UNIDADES_POR_PAQUETE = 20` se conserva en el catálogo.
+
+**Tablas (migraciones `2026_11_09_*`):**
+- `ventas` — maestro: `numero` (`VTA-00001`, único), `cliente_id`, `user_id` (vendedor), `fecha`, `subtotal`, `descuento_total`, `total`, `estado` (`confirmada` | `anulada`), `forma_pago` (`contado` | `credito`), `fecha_vencimiento`, `observaciones`, datos de anulación (`anulada_at`, `anulada_por`, `motivo_anulacion`).
+- `detalle_venta` — líneas con snapshot de `precio_unidad` (precio unitario, congelado al momento de la venta), `cantidad_unidades`, `descuento_tipo` (`porcentaje` | `monto`), `descuento_valor`, `descuento_monto`, `subtotal` (bruto) y `total` (neto). Se eliminaron `cantidad_paquetes`, `precio_paquete` y `unidades_por_paquete`.
+- `pago_venta` — abonos: `fecha`, `monto`, `metodo` (`efectivo`, `transferencia`, `nequi`, `daviplata`, `otro`), `referencia`, `nota`, `user_id`. El abono inicial se guarda aquí con nota "Abono inicial".
+- `movimientos_inventario.venta_id` — traza los `venta_despacho` de una venta y permite revertirlos al anular.
+
+**Reglas de negocio:**
+- Precio unitario = `round(precio_venta / 20, 2)` vía `ProductoTerminado::precio_unitario()`; el catálogo y su seeder **no cambian** (siguen con precio por paquete).
+- `ProductoTerminado::UNIDADES_POR_PAQUETE = 20` se conserva (catálogo/seeder/precio unitario).
+- El stock se descuenta **al confirmar**: `cantidad_unidades` unidades, movimiento `venta_despacho`.
+- **Forma de pago switch:** en el formulario hay un interruptor para seleccionar **Contado** o **Crédito**:
+  - **Contado**: el abono inicial cubre el 100% del total automáticamente; no hay fecha de vencimiento; la venta queda "pagada" al instante. En el formulario el campo de abono y el de vencimiento se ocultan.
+  - **Crédito**: se ingresa un abono inicial (puede ser 0 o parcial); si queda saldo, la fecha de vencimiento es obligatoria (por defecto +30 días); queda un saldo pendiente.
+- La forma de pago se **guarda** en `ventas.forma_pago` (`Venta::FORMA_CONTADO` / `Venta::FORMA_CREDITO`) y `Venta::formaPago()` devuelve la etiqueta. No se deriva del saldo: una venta a crédito ya pagada sigue mostrándose como "Crédito".
+- Cliente obligatorio, vendedor = usuario autenticado, consecutivo `VTA-00001`, COP, sin IVA ni datos fiscales.
+- Descuento **por línea** (% o monto) con tope en el bruto. Duplicados del mismo producto se permiten como líneas separadas (el stock se valida sumando unidades).
+- Contado o crédito: abono inicial (puede ser 0). Si queda saldo, `fecha_vencimiento` es obligatoria; cartera separada con abonos.
+- Estados de pago derivados (no se guardan): `pagada` / `pendiente` / `vencida` / `anulada`, calculados con `totalPagado()` / `saldo()` (`withSum('pagos','monto')` cuando está disponible).
+- Anulación: solo ventas `confirmada` y **sin abonos**; revierte stock con `MovimientoInventarioService::anular()` (movimientos espejo `anulacion_reversion`). La venta no se borra.
+- Sin IVA y sin datos fiscales en el comprobante. Moneda COP.
+
+**Rutas (`/ventas`):** `index`, `crear`, `store`, `{venta}`, `{venta}/recibo` (vista imprimible), `{venta}/anular` (GET/POST), `{venta}/abonos/crear` + `{venta}/abonos`, `cartera`, `reportes/clientes`, `reportes/productos`, `exportar` (CSV). Las rutas estáticas van antes de `{venta}` y éstas usan `whereNumber`.
+
+**Servicios clave:** `VentaService` (crear, descuentos, validación de stock, anular, nuevo switch contado/ Crédito), `PagoVentaService` (registrar abono, valida saldo y método).
+
+**Vistas:** `resources/views/ventas/{index,create,show,recibo,anular,cartera,abonos/create,reportes/clientes,reportes/productos}.blade.php`. El formulario de creación usa un switch `Contado/Crédito` y JS plano para recalcular totales/descuentos en vivo.
+
+**Dashboard:** `InventarioService::resumen()` agrega `ventas_hoy_*`, `ventas_mes_*`, `cartera_pendiente` y `cartera_vencidas`; el dashboard muestra esas tarjetas y la acción rápida "Registrar Venta" apunta a `ventas.create`.
+
+**Menú:** ítems "Ventas" (`fa-cash-register`) y "Cartera" (`fa-wallet`) en `layouts/app.blade.php`.
+
 ## Known Issues
 
 1. ~~**Dual JS loading:** cargaban JS vía `@vite()` y `asset('js/app.js')` — el service worker se registraba dos veces.~~ Corregido: se usa solo `@vite(['resources/js/app.js'])`.
@@ -107,13 +144,25 @@ Arquitectura **Controller → Service → Model** (sin Livewire ni Alpine; JS pl
 
 - PHPUnit 11.5
 - Tests use **SQLite in-memory** (`phpunit.xml` overrides DB config)
+
+> **CRÍTICO — los tests nunca deben tocar la BD real.** El contenedor Docker define
+> `DB_CONNECTION=mysql` y `DB_DATABASE=santini_db` como variables de entorno. Laravel lee
+> `$_SERVER` antes que `.env`, y por defecto PHPUnit **no sobrescribe** variables ya definidas,
+> así que los tests terminaban corriendo sobre MySQL y `RefreshDatabase` borraba la base de
+> desarrollo. Por eso `phpunit.xml` declara los `env` con `force="true"` **y** los `<server>`
+> equivalentes, y `tests/TestCase.php` aborta si la conexión no es `sqlite`.
+> Si alguna vez los tests vuelven a borrar datos, revisa primero esos dos archivos.
 - Tests del módulo inventario:
   - `tests/Unit/MovimientoInventarioServiceTest.php` — motor de stock, reversiones, stock negativo
   - `tests/Unit/ConteoFisicoServiceTest.php` — flujo de conteo y generación de ajustes
   - `tests/Feature/MateriaPrimaFeatureTest.php`, `ProductoTerminadoFeatureTest.php`, `MovimientoInventarioFeatureTest.php`
   - `tests/Feature/RecetaFeatureTest.php` — CRUD de recetas/BOM
   - `tests/Feature/ProduccionFeatureTest.php` — producción descuenta MP y suma PT, rechaza sin receta / con stock insuficiente
-  - `tests/Feature/ViewsSmokeTest.php` — smoke test de render de todas las vistas (incluyendo recetas y producción)
+  - `tests/Feature/ClienteFeatureTest.php` — CRUD de clientes
+  - `tests/Unit/VentaServiceTest.php` — motor de stock, reversiones, stock negativo, nuevo switch contado/ Crédito
+  - `tests/Feature/VentaFeatureTest.php` — listado, formulario, store, recibo, anulación y CSV
+  - `tests/Feature/ReporteVentaFeatureTest.php` — reportes por cliente/producto y filtros de fecha
+  - `tests/Feature/ViewsSmokeTest.php` — smoke test de render de todas las vistas (incluyendo recetas, producción, clientes y ventas)
 
 **Importante:** El caché de rutas/config (`bootstrap/cache/routes-v7.php`, `config.php`) se regenera apuntando a MySQL RDS y predata a los cambios. Antes de correr tests/artisan localmente conviene limpiarlo (`php artisan config:clear` + `php artisan route:clear`) — el script `composer test` ya hace `config:clear`.
 

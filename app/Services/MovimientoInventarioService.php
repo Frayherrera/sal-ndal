@@ -50,6 +50,7 @@ class MovimientoInventarioService
                 'costo_total' => $data['costo_total'] ?? null,
                 'user_id' => $data['user_id'] ?? auth()->id(),
                 'conteo_fisico_id' => $data['conteo_fisico_id'] ?? null,
+                'venta_id' => $data['venta_id'] ?? null,
                 'fecha' => $data['fecha'] ?? now(),
             ]);
         });
@@ -367,6 +368,7 @@ class MovimientoInventarioService
                 'motivo' => $motivo,
                 'user_id' => auth()->id(),
                 'movimiento_original_id' => $movimiento->id,
+                'venta_id' => $movimiento->venta_id,
                 'fecha' => now(),
             ]);
         });

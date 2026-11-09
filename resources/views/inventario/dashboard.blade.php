@@ -55,6 +55,52 @@
         </a>
     </div>
 
+    <!-- Stats Cards — Ventas y cartera -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <a href="{{ route('ventas.index', ['desde' => now()->toDateString(), 'hasta' => now()->toDateString()]) }}" class="glass-card rounded-2xl p-6 animate-fade-in hover:bg-white/10 transition-colors block">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-cash-register text-green-400 text-xl"></i>
+                </div>
+                <span class="text-xs text-white/50">{{ $ventas_hoy_count }} ventas</span>
+            </div>
+            <div class="text-3xl font-bold text-white mb-1">${{ number_format($ventas_hoy_total, 0, ',', '.') }}</div>
+            <div class="text-sm text-white/50">Vendido hoy</div>
+        </a>
+
+        <a href="{{ route('ventas.index', ['desde' => now()->startOfMonth()->toDateString(), 'hasta' => now()->toDateString()]) }}" class="glass-card rounded-2xl p-6 animate-delay-100 hover:bg-white/10 transition-colors block">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-teal-500/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-calendar-check text-teal-400 text-xl"></i>
+                </div>
+                <span class="text-xs text-white/50">{{ $ventas_mes_count }} ventas</span>
+            </div>
+            <div class="text-3xl font-bold text-white mb-1">${{ number_format($ventas_mes_total, 0, ',', '.') }}</div>
+            <div class="text-sm text-white/50">Vendido este mes</div>
+        </a>
+
+        <a href="{{ route('ventas.cartera') }}" class="glass-card rounded-2xl p-6 animate-delay-200 hover:bg-white/10 transition-colors block">
+            <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center mb-4">
+                <i class="fas fa-wallet text-yellow-400 text-xl"></i>
+            </div>
+            <div class="text-3xl font-bold text-white mb-1">${{ number_format($cartera_pendiente, 0, ',', '.') }}</div>
+            <div class="text-sm text-white/50">Saldo pendiente en cartera</div>
+        </a>
+
+        <a href="{{ route('ventas.cartera', ['vencidas' => 1]) }}" class="glass-card rounded-2xl p-6 animate-delay-300 hover:bg-white/10 transition-colors block">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-triangle-exclamation text-red-400 text-xl"></i>
+                </div>
+                @if ($cartera_vencidas > 0)
+                    <span class="text-xs text-red-300 bg-red-400/10 px-2 py-1 rounded-full">Revisar</span>
+                @endif
+            </div>
+            <div class="text-3xl font-bold {{ $cartera_vencidas > 0 ? 'text-red-300' : 'text-white' }} mb-1">{{ number_format($cartera_vencidas) }}</div>
+            <div class="text-sm text-white/50">Ventas vencidas</div>
+        </a>
+    </div>
+
     <div class="grid lg:grid-cols-3 gap-6">
         <!-- Recent Activity -->
         <div class="lg:col-span-2 glass-card rounded-2xl p-6 animate-fade-in">
@@ -108,7 +154,7 @@
                     <span class="text-sm font-medium">Registrar Producción</span>
                 </a>
 
-                <a href="{{ route('inventario.movimientos.create', ['tipo' => 'venta_despacho']) }}"
+                <a href="{{ route('ventas.create') }}"
                    class="flex items-center gap-3 p-3 rounded-xl bg-green-500/20 hover:bg-green-500/30 text-green-300 transition-colors w-full text-left">
                     <i class="fas fa-tag w-5 text-center"></i>
                     <span class="text-sm font-medium">Registrar Venta</span>

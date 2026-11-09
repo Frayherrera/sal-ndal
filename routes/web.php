@@ -1,14 +1,19 @@
 <?php
 
+use App\Http\Controllers\CarteraController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ConteoFisicoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MateriaPrimaController;
 use App\Http\Controllers\MolidoController;
 use App\Http\Controllers\MovimientoInventarioController;
+use App\Http\Controllers\PagoVentaController;
 use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\ProductoTerminadoController;
 use App\Http\Controllers\RecetaController;
+use App\Http\Controllers\ReporteVentaController;
+use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -99,4 +104,27 @@ Route::middleware('auth')->group(function () {
         ->name('inventario.produccion.create');
     Route::post('inventario/produccion', [ProduccionController::class, 'store'])
         ->name('inventario.produccion.store');
+
+    // Clientes
+    Route::resource('clientes', ClienteController::class)
+        ->parameters(['clientes' => 'cliente'])
+        ->except('show');
+
+    // Ventas
+    Route::prefix('ventas')->name('ventas.')->group(function () {
+        Route::get('/', [VentaController::class, 'index'])->name('index');
+        Route::get('crear', [VentaController::class, 'create'])->name('create');
+        Route::post('/', [VentaController::class, 'store'])->name('store');
+        Route::get('cartera', [CarteraController::class, 'index'])->name('cartera');
+        Route::get('reportes/clientes', [ReporteVentaController::class, 'clientes'])->name('reportes.clientes');
+        Route::get('reportes/productos', [ReporteVentaController::class, 'productos'])->name('reportes.productos');
+        Route::get('exportar', [VentaController::class, 'export'])->name('export');
+
+        Route::get('{venta}', [VentaController::class, 'show'])->whereNumber('venta')->name('show');
+        Route::get('{venta}/recibo', [VentaController::class, 'recibo'])->whereNumber('venta')->name('recibo');
+        Route::get('{venta}/anular', [VentaController::class, 'anularView'])->whereNumber('venta')->name('anular');
+        Route::post('{venta}/anular', [VentaController::class, 'anular'])->whereNumber('venta')->name('anular.store');
+        Route::get('{venta}/abonos/crear', [PagoVentaController::class, 'create'])->whereNumber('venta')->name('abonos.create');
+        Route::post('{venta}/abonos', [PagoVentaController::class, 'store'])->whereNumber('venta')->name('abonos.store');
+    });
 });

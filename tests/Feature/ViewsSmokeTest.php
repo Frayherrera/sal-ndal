@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Cliente;
 use App\Models\ConteoFisico;
 use App\Models\InventarioMateriaPrima;
 use App\Models\InventarioProductoTerminado;
 use App\Models\MateriaPrima;
 use App\Models\ProductoTerminado;
 use App\Models\User;
+use App\Models\Venta;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
@@ -100,6 +102,59 @@ class ViewsSmokeTest extends TestCase
         $this->actingAs($this->user)->get('/inventario/conteo-fisico')->assertOk();
         $this->actingAs($this->user)->get('/inventario/conteo-fisico/crear?tipo=materia_prima')->assertOk();
         $this->actingAs($this->user)->get("/inventario/conteo-fisico/{$conteo->id}")->assertOk();
+    }
+
+    #[Test]
+    public function vistas_de_clientes_se_renders(): void
+    {
+        $cliente = Cliente::factory()->create();
+
+        $this->actingAs($this->user)->get('/clientes')->assertOk();
+        $this->actingAs($this->user)->get('/clientes/create')->assertOk();
+        $this->actingAs($this->user)->get("/clientes/{$cliente->id}/edit")->assertOk();
+    }
+
+    #[Test]
+    public function vistas_de_ventas_se_renders(): void
+    {
+        $cliente = Cliente::factory()->create();
+        $producto = ProductoTerminado::factory()->create();
+        InventarioProductoTerminado::create([
+            'producto_terminado_id' => $producto->id,
+            'disponible' => 100,
+            'comprometido' => 0,
+        ]);
+
+        $venta = Venta::factory()->create([
+            'cliente_id' => $cliente->id,
+            'user_id' => $this->user->id,
+            'subtotal' => 1200,
+            'total' => 1200,
+            'fecha_vencimiento' => now()->addDays(30)->toDateString(),
+        ]);
+
+        $venta->forceFill(['numero' => 'VTA-00001'])->save();
+
+        $venta->detalles()->create([
+            'producto_terminado_id' => $producto->id,
+            'cantidad_unidades' => 1,
+            'precio_unidad' => 1200,
+            'descuento_tipo' => 'monto',
+            'descuento_valor' => 0,
+            'descuento_monto' => 0,
+            'subtotal' => 1200,
+            'total' => 1200,
+        ]);
+
+        $this->actingAs($this->user)->get('/ventas')->assertOk();
+        $this->actingAs($this->user)->get('/ventas/crear')->assertOk();
+        $this->actingAs($this->user)->get("/ventas/{$venta->id}")->assertOk();
+        $this->actingAs($this->user)->get("/ventas/{$venta->id}/recibo")->assertOk();
+        $this->actingAs($this->user)->get("/ventas/{$venta->id}/anular")->assertOk();
+        $this->actingAs($this->user)->get("/ventas/{$venta->id}/abonos/crear")->assertOk();
+        $this->actingAs($this->user)->get('/ventas/cartera')->assertOk();
+        $this->actingAs($this->user)->get('/ventas/reportes/clientes')->assertOk();
+        $this->actingAs($this->user)->get('/ventas/reportes/productos')->assertOk();
     }
 
     #[Test]

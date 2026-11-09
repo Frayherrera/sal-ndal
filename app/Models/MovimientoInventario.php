@@ -39,6 +39,7 @@ class MovimientoInventario extends Model
         'user_id',
         'movimiento_original_id',
         'conteo_fisico_id',
+        'venta_id',
         'fecha',
     ];
 
@@ -71,5 +72,10 @@ class MovimientoInventario extends Model
     public function conteoFisico(): BelongsTo
     {
         return $this->belongsTo(ConteoFisico::class);
+    }
+
+    public function venta(): BelongsTo
+    {
+        return $this->belongsTo(Venta::class);
     }
 }
