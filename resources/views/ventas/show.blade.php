@@ -85,8 +85,21 @@
 
     <div class="grid lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
+            @if ($venta->detalles->isEmpty())
             <div class="glass-card rounded-2xl p-6 animate-fade-in">
-                <h2 class="text-lg font-semibold text-white mb-4">Productos</h2>
+                <h2 class="text-lg font-semibold text-white mb-4">Detalle</h2>
+                <div class="flex items-center justify-between p-4 rounded-xl bg-white/5">
+                    <div>
+                        <div class="text-white font-medium">Venta por valor total</div>
+                        <div class="text-sm text-white/50 whitespace-pre-line">{{ $venta->observaciones ?: 'Sin descripción' }}</div>
+                    </div>
+                    <div class="text-2xl font-bold text-white whitespace-nowrap ml-4">${{ number_format($venta->total, 0, ',', '.') }}</div>
+                </div>
+            </div>
+            @else
+            <div class="glass-card rounded-2xl p-6 animate-fade-in">
+                <h2 class="text-lg font-semibold text-white mb-1">Productos</h2>
+                <p class="text-xs text-white/40 mb-4">Venta registrada por productos (anterior al cambio a valor total).</p>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead>
@@ -140,6 +153,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
             <div class="glass-card rounded-2xl p-6 animate-fade-in">
                 <div class="flex items-center justify-between mb-4">
@@ -186,63 +200,6 @@
                 @endif
             </div>
 
-            <div class="glass-card rounded-2xl p-6 animate-delay-200">
-                <h2 class="text-lg font-semibold text-white mb-2">Cliente</h2>
-                <div class="space-y-3 text-sm">
-                    <div>
-                        <div class="text-white font-medium">{{ $venta->cliente?->nombre ?? '—' }}</div>
-                        @if ($venta->cliente?->local)
-                            <div class="text-white/50">{{ $venta->cliente->local }}</div>
-                        @endif
-                        @if ($venta->cliente?->ciudad)
-                            <div class="text-white/40">{{ $venta->cliente->ciudad }}</div>
-                        @endif
-                    </div>
-                    @if ($venta->cliente?->telefono)
-                        <a href="tel:{{ $venta->cliente->telefono }}" class="inline-flex items-center gap-2 text-blue-300 hover:text-blue-200">
-                            <i class="fas fa-phone text-xs"></i> {{ $venta->cliente->telefono }}
-                        </a>
-                    @endif
-                    <a href="{{ route('clientes.edit', $venta->cliente) }}" class="inline-flex items-center gap-2 text-white/50 hover:text-white text-xs">
-                        <i class="fas fa-pen"></i> Editar cliente
-                    </a>
-                </div>
-            </div>
-
-            @if ($venta->observaciones)
-                <div class="glass-card rounded-2xl p-6 animate-delay-200">
-                    <h2 class="text-lg font-semibold text-white mb-2">Observaciones</h2>
-                    <p class="text-sm text-white/60 whitespace-pre-line">{{ $venta->observaciones }}</p>
-                </div>
-            @endif
-
-            @if ($venta->estado === \App\Models\Venta::ESTADO_ANULADA)
-                <div class="glass-card rounded-2xl p-6 border border-red-500/20 animate-delay-200">
-                    <h2 class="text-lg font-semibold text-red-300 mb-2">Venta anulada</h2>
-                    <p class="text-sm text-white/60 whitespace-pre-line">{{ $venta->motivo_anulacion }}</p>
-                    <p class="text-xs text-white/40 mt-2">
-                        {{ $venta->anulada_at?->format('d/m/Y H:i') }}
-                        @if ($venta->anuladaPor)
-                            · {{ $venta->anuladaPor->name }}
-                        @endif
-                    </p>
-                </div>
-            @elseif ($venta->pagos->isNotEmpty())
-                <div class="glass-card rounded-2xl p-6 border border-yellow-500/20 animate-delay-200">
-                    <p class="text-sm text-yellow-200">
-                        <i class="fas fa-circle-info mr-1"></i>
-                        Esta venta tiene abonos registrados, por lo que no puede anularse hasta gestionar la devolución del dinero.
-                    </p>
-                </div>
-            @endif
-
-            <div class="glass-card rounded-2xl p-6 animate-delay-300">
-                <h2 class="text-lg font-semibold text-white mb-4">Movimientos de inventario</h2>
-                <a href="{{ route('inventario.movimientos.index', ['q' => $venta->numero]) }}"
-                   class="text-sm text-blue-300 hover:text-blue-200">
-                    <i class="fas fa-arrows-rotate mr-1"></i> Ver kardex de esta venta
-                </a>
-            </div>
         </div>
 
         <div class="space-y-6">
@@ -282,7 +239,7 @@
                 </div>
             </div>
 
-            @if ($venta->observaciones)
+            @if ($venta->observaciones && $venta->detalles->isNotEmpty())
                 <div class="glass-card rounded-2xl p-6 animate-delay-200">
                     <h2 class="text-lg font-semibold text-white mb-2">Observaciones</h2>
                     <p class="text-sm text-white/60 whitespace-pre-line">{{ $venta->observaciones }}</p>
@@ -309,13 +266,15 @@
                 </div>
             @endif
 
-            <div class="glass-card rounded-2xl p-6 animate-delay-300">
-                <h2 class="text-lg font-semibold text-white mb-4">Movimientos de inventario</h2>
-                <a href="{{ route('inventario.movimientos.index', ['q' => $venta->numero]) }}"
-                   class="text-sm text-blue-300 hover:text-blue-200">
-                    <i class="fas fa-arrows-rotate mr-1"></i> Ver kardex de esta venta
-                </a>
-            </div>
+            @if ($venta->detalles->isNotEmpty())
+                <div class="glass-card rounded-2xl p-6 animate-delay-300">
+                    <h2 class="text-lg font-semibold text-white mb-4">Movimientos de inventario</h2>
+                    <a href="{{ route('inventario.movimientos.index', ['q' => $venta->numero]) }}"
+                       class="text-sm text-blue-300 hover:text-blue-200">
+                        <i class="fas fa-arrows-rotate mr-1"></i> Ver kardex de esta venta
+                    </a>
+                </div>
+            @endif
         </div>
     </div>
 @endsection

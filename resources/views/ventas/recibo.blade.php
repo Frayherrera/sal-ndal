@@ -110,6 +110,29 @@
             </div>
         </div>
 
+        @if ($venta->detalles->isEmpty())
+        <table>
+            <thead>
+                <tr>
+                    <th>Concepto</th>
+                    <th class="num">Valor</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="white-space: pre-line;">{{ $venta->observaciones ?: 'Venta de condimentos y especias' }}</td>
+                    <td class="num">{{ number_format($venta->total, 0, ',', '.') }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="totales">
+            <div class="fila gran-total">
+                <span>Total</span>
+                <span>{{ number_format($venta->total, 0, ',', '.') }}</span>
+            </div>
+        </div>
+        @else
         <table>
             <thead>
                 <tr>
@@ -148,6 +171,7 @@
                 <span>{{ number_format($venta->total, 0, ',', '.') }}</span>
             </div>
         </div>
+        @endif
 
         <div class="pagos">
             <h2>Abonos</h2>
@@ -179,7 +203,7 @@
             @endif
         </div>
 
-        @if ($venta->observaciones)
+        @if ($venta->observaciones && $venta->detalles->isNotEmpty())
             <p style="margin-top: 18px; color: #475569;"><strong>Observaciones:</strong> {{ $venta->observaciones }}</p>
         @endif
 

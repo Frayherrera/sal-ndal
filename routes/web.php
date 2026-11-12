@@ -117,7 +117,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [VentaController::class, 'store'])->name('store');
         Route::get('cartera', [CarteraController::class, 'index'])->name('cartera');
         Route::get('reportes/clientes', [ReporteVentaController::class, 'clientes'])->name('reportes.clientes');
-        Route::get('reportes/productos', [ReporteVentaController::class, 'productos'])->name('reportes.productos');
         Route::get('exportar', [VentaController::class, 'export'])->name('export');
 
         Route::get('{venta}', [VentaController::class, 'show'])->whereNumber('venta')->name('show');

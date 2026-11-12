@@ -54,7 +54,7 @@
                 <div class="flex items-start gap-3 mb-6 p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
                     <i class="fas fa-triangle-exclamation text-yellow-400 mt-0.5"></i>
                     <p class="text-sm text-yellow-100">
-                        Al anular la venta se devuelve todo el stock al inventario mediante movimientos de reversión.
+                        La venta quedará marcada como anulada y dejará de sumar en ventas y cartera.
                         La venta no se elimina: queda registrada como anulada.
                     </p>
                 </div>

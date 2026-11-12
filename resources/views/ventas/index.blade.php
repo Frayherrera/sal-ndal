@@ -6,7 +6,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8 animate-fade-in">
         <div>
             <h1 class="text-3xl font-bold text-white mb-2">Ventas</h1>
-            <p class="text-white/60">Ventas de productos terminados, pagos y cartera.</p>
+            <p class="text-white/60">Ventas por valor total, pagos y cartera.</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
             <a href="{{ route('ventas.cartera') }}"
@@ -31,11 +31,6 @@
         <a href="{{ route('ventas.reportes.clientes') }}"
            class="flex items-center gap-2 text-sm text-blue-300 hover:text-blue-200 transition-colors">
             <i class="fas fa-users"></i> Ventas por cliente
-        </a>
-        <span class="text-white/20">|</span>
-        <a href="{{ route('ventas.reportes.productos') }}"
-           class="flex items-center gap-2 text-sm text-purple-300 hover:text-purple-200 transition-colors">
-            <i class="fas fa-ranking-star"></i> Productos más vendidos
         </a>
     </div>
 

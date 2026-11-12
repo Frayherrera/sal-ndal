@@ -14,9 +14,6 @@
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-3">
-            <a href="{{ route('ventas.reportes.productos') }}" class="text-sm text-purple-300 hover:text-purple-200 transition-colors">
-                <i class="fas fa-ranking-star mr-1"></i> Productos más vendidos
-            </a>
             <a href="{{ route('ventas.export', request()->query()) }}"
                class="flex items-center gap-2 glass-card text-white/70 px-4 py-2.5 rounded-xl font-medium hover:text-white transition-colors">
                 <i class="fas fa-file-csv"></i> CSV

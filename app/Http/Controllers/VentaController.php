@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Cliente;
 use App\Models\PagoVenta;
-use App\Models\ProductoTerminado;
 use App\Models\Venta;
 use App\Services\VentaService;
 use Illuminate\Database\Eloquent\Builder;
@@ -40,10 +39,6 @@ class VentaController extends Controller
     {
         return view('ventas.create', [
             'clientes' => Cliente::orderBy('nombre')->get(),
-            'productos' => ProductoTerminado::with('inventario')
-                ->where('activo', true)
-                ->orderBy('nombre')
-                ->get(),
             'metodos' => PagoVenta::METODOS,
         ]);
     }
@@ -103,7 +98,7 @@ class VentaController extends Controller
         }
 
         return redirect()->route('ventas.show', $venta)
-            ->with('success', 'Venta anulada y stock revertido.');
+            ->with('success', 'Venta anulada correctamente.');
     }
 
     public function export(Request $request): StreamedResponse
@@ -120,8 +115,8 @@ class VentaController extends Controller
             fwrite($out, "\xEF\xBB\xBF");
 
             fputcsv($out, [
-                'Número', 'Fecha', 'Cliente', 'Local', 'Ciudad', 'Estado',
-                'Subtotal', 'Descuento', 'Total', 'Pagado', 'Saldo', 'Vendedor',
+                'Número', 'Fecha', 'Cliente', 'Local', 'Ciudad', 'Forma de pago', 'Estado',
+                'Total', 'Pagado', 'Saldo', 'Vendedor', 'Observaciones',
             ], ';');
 
             foreach ($ventas as $venta) {
@@ -131,13 +126,13 @@ class VentaController extends Controller
                     $venta->cliente?->nombre,
                     $venta->cliente?->local,
                     $venta->cliente?->ciudad,
+                    $venta->formaPago(),
                     Venta::ESTADO_PAGO_LABELS[$venta->estadoPago()] ?? $venta->estadoPago(),
-                    number_format((float) $venta->subtotal, 2, ',', ''),
-                    number_format((float) $venta->descuento_total, 2, ',', ''),
                     number_format((float) $venta->total, 2, ',', ''),
                     number_format($venta->totalPagado(), 2, ',', ''),
                     number_format($venta->saldo(), 2, ',', ''),
                     $venta->user?->name,
+                    $venta->observaciones,
                 ], ';');
             }
 
@@ -217,11 +212,7 @@ class VentaController extends Controller
             'abono_inicial' => ['nullable', 'numeric', 'min:0'],
             'metodo_pago' => ['nullable', 'in:'.implode(',', array_keys(PagoVenta::METODOS))],
             'referencia_pago' => ['nullable', 'string', 'max:100'],
-            'lineas' => ['required', 'array', 'min:1'],
-            'lineas.*.producto_terminado_id' => ['required', 'exists:producto_terminados,id'],
-            'lineas.*.cantidad_unidades' => ['required', 'integer', 'min:1'],
-            'lineas.*.descuento_tipo' => ['nullable', 'in:porcentaje,monto'],
-            'lineas.*.descuento_valor' => ['nullable', 'numeric', 'min:0'],
+            'total' => ['required', 'numeric', 'gt:0', 'max:9999999999'],
             'forma_pago' => ['required', 'in:contado,credito'],
         ], [
             'cliente_id.required' => 'Debes seleccionar un cliente.',
@@ -229,11 +220,9 @@ class VentaController extends Controller
             'fecha.required' => 'La fecha de la venta es obligatoria.',
             'fecha.before_or_equal' => 'La fecha de la venta no puede ser futura.',
             'fecha_vencimiento.after_or_equal' => 'El vencimiento no puede ser anterior a la fecha de la venta.',
-            'lineas.required' => 'Agrega al menos un producto a la venta.',
-            'lineas.min' => 'Agrega al menos un producto a la venta.',
-            'lineas.*.producto_terminado_id.required' => 'Selecciona un producto en todas las líneas.',
-            'lineas.*.cantidad_unidades.required' => 'Indica la cantidad de unidades.',
-            'lineas.*.cantidad_unidades.min' => 'Cada línea debe tener al menos una unidad.',
+            'total.required' => 'Indica el valor total de la venta.',
+            'total.numeric' => 'El valor total debe ser un número.',
+            'total.gt' => 'El valor total de la venta debe ser mayor a cero.',
         ]);
     }
 }

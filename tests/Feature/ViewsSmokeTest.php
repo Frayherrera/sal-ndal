@@ -154,7 +154,20 @@ class ViewsSmokeTest extends TestCase
         $this->actingAs($this->user)->get("/ventas/{$venta->id}/abonos/crear")->assertOk();
         $this->actingAs($this->user)->get('/ventas/cartera')->assertOk();
         $this->actingAs($this->user)->get('/ventas/reportes/clientes')->assertOk();
-        $this->actingAs($this->user)->get('/ventas/reportes/productos')->assertOk();
+
+        // Venta nueva, por valor total (sin detalle)
+        $ventaTotal = Venta::factory()->create([
+            'cliente_id' => $cliente->id,
+            'user_id' => $this->user->id,
+            'subtotal' => 50000,
+            'total' => 50000,
+            'observaciones' => 'Venta por total',
+            'fecha_vencimiento' => now()->addDays(30)->toDateString(),
+        ]);
+        $ventaTotal->forceFill(['numero' => 'VTA-00002'])->save();
+
+        $this->actingAs($this->user)->get("/ventas/{$ventaTotal->id}")->assertOk()->assertSee('Venta por total');
+        $this->actingAs($this->user)->get("/ventas/{$ventaTotal->id}/recibo")->assertOk()->assertSee('Venta por total');
     }
 
     #[Test]

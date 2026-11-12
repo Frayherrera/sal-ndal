@@ -4,10 +4,13 @@ namespace Tests\Unit;
 
 use App\Models\Cliente;
 use App\Models\InventarioProductoTerminado;
+use App\Models\MovimientoInventario;
 use App\Models\PagoVenta;
 use App\Models\ProductoTerminado;
 use App\Models\User;
 use App\Models\Venta;
+use App\Services\MovimientoInventarioService;
+use App\Services\PagoVentaService;
 use App\Services\VentaService;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -27,142 +30,75 @@ class VentaServiceTest extends TestCase
         $this->service = app(VentaService::class);
     }
 
-    private function producto(int $stock = 100, float $precio = 24000): ProductoTerminado
-    {
-        $pt = ProductoTerminado::factory()->create([
-            'precio_venta' => $precio,
-            'activo' => true,
-        ]);
-
-        InventarioProductoTerminado::create([
-            'producto_terminado_id' => $pt->id,
-            'disponible' => $stock,
-            'comprometido' => 0,
-        ]);
-
-        return $pt;
-    }
-
     /**
-     * @param  array<int, array<string, mixed>>  $lineas
      * @param  array<string, mixed>  $extra
      */
-    private function crearVenta(Cliente $cliente, array $lineas, array $extra = []): Venta
+    private function crearVenta(Cliente $cliente, float $total = 50000, array $extra = []): Venta
     {
         return $this->service->crear(array_merge([
             'cliente_id' => $cliente->id,
             'fecha' => now()->toDateString(),
             'fecha_vencimiento' => now()->addDays(30)->toDateString(),
+            'forma_pago' => 'credito',
             'abono_inicial' => 0,
-            'lineas' => $lineas,
+            'total' => $total,
         ], $extra));
     }
 
     #[Test]
-    public function crea_la_venta_descuenta_stock_en_unidades_y_genera_consecutivo(): void
+    public function crea_la_venta_por_valor_total_y_genera_consecutivo(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto(100);
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 2,
-            'descuento_tipo' => 'monto',
-            'descuento_valor' => 0,
-        ]]);
+        $venta = $this->crearVenta($cliente, 50000, ['observaciones' => 'Pedido surtido']);
 
         $this->assertSame('VTA-00001', $venta->numero);
-        $this->assertSame(2400.0, (float) $venta->total);
+        $this->assertSame(50000.0, (float) $venta->total);
+        $this->assertSame(50000.0, (float) $venta->subtotal);
         $this->assertSame(0.0, (float) $venta->descuento_total);
-        $this->assertSame(98, $pt->fresh()->inventario->disponible);
-        $this->assertDatabaseHas('movimientos_inventario', [
-            'venta_id' => $venta->id,
-            'tipo' => 'venta_despacho',
-            'cantidad' => 2,
-            'direccion' => 'salida',
+        $this->assertSame('Pedido surtido', $venta->observaciones);
+        $this->assertSame(0, $venta->detalles()->count());
+    }
+
+    #[Test]
+    public function no_toca_el_inventario(): void
+    {
+        $cliente = Cliente::factory()->create();
+        $pt = ProductoTerminado::factory()->create();
+        InventarioProductoTerminado::create([
+            'producto_terminado_id' => $pt->id,
+            'disponible' => 100,
+            'comprometido' => 0,
         ]);
-        $this->assertSame(1, $venta->detalles()->count());
+
+        $venta = $this->crearVenta($cliente);
+
+        $this->assertSame(100, $pt->fresh()->inventario->disponible);
+        $this->assertSame(0, MovimientoInventario::count());
+        $this->assertDatabaseMissing('movimientos_inventario', ['venta_id' => $venta->id]);
     }
 
     #[Test]
-    public function congela_el_precio_del_producto_en_la_linea(): void
+    public function rechaza_total_cero_o_negativo(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto(100, 24000);
-
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 1,
-        ]]);
-
-        $pt->update(['precio_venta' => 99000]);
-
-        $detalle = $venta->fresh()->detalles->first();
-
-        $this->assertSame(1200.0, (float) $detalle->precio_unidad);
-        $this->assertSame(1200.0, (float) $detalle->total);
-    }
-
-    #[Test]
-    public function aplica_descuento_por_porcentaje(): void
-    {
-        $cliente = Cliente::factory()->create();
-        $pt = $this->producto(100, 24000);
-
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 2,
-            'descuento_tipo' => 'porcentaje',
-            'descuento_valor' => 10,
-        ]]);
-
-        $this->assertSame(240.0, (float) $venta->descuento_total);
-        $this->assertSame(2160.0, (float) $venta->total);
-    }
-
-    #[Test]
-    public function aplica_descuento_por_monto_con_tope_en_el_bruto(): void
-    {
-        $this->assertSame(5000.0, $this->service->calcularDescuento(24000, 'monto', 5000));
-        $this->assertSame(24000.0, $this->service->calcularDescuento(24000, 'monto', 999999));
-        $this->assertSame(2400.0, $this->service->calcularDescuento(24000, 'porcentaje', 10));
-    }
-
-    #[Test]
-    public function rechaza_descuento_porcentual_mayor_a_cien(): void
-    {
-        $this->expectException(RuntimeException::class);
-
-        $this->service->calcularDescuento(24000, 'porcentaje', 120);
-    }
-
-    #[Test]
-    public function suma_unidades_de_lineas_duplicadas_para_validar_stock(): void
-    {
-        $cliente = Cliente::factory()->create();
-        $pt = $this->producto(30); // alcanza para 20 u, no para 40 u
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessageMatches('/Stock insuficiente/');
+        $this->expectExceptionMessageMatches('/mayor a cero/');
 
-        $this->crearVenta($cliente, [
-            ['producto_terminado_id' => $pt->id, 'cantidad_unidades' => 20],
-            ['producto_terminado_id' => $pt->id, 'cantidad_unidades' => 20],
-        ]);
+        $this->crearVenta($cliente, 0);
     }
 
     #[Test]
     public function rechaza_venta_sin_cliente(): void
     {
-        $pt = $this->producto();
-
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Debes seleccionar un cliente.');
 
         $this->service->crear([
             'cliente_id' => null,
             'fecha' => now()->toDateString(),
-            'lineas' => [['producto_terminado_id' => $pt->id, 'cantidad_unidades' => 1]],
+            'total' => 1000,
         ]);
     }
 
@@ -170,27 +106,19 @@ class VentaServiceTest extends TestCase
     public function exige_fecha_de_vencimiento_cuando_queda_saldo(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto();
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches('/fecha de vencimiento/');
 
-        $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 1,
-        ]], ['fecha_vencimiento' => null]);
+        $this->crearVenta($cliente, 1200, ['fecha_vencimiento' => null]);
     }
 
     #[Test]
     public function no_exige_vencimiento_si_la_venta_queda_pagada(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto();
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 1,
-        ]], [
+        $venta = $this->crearVenta($cliente, 1200, [
             'abono_inicial' => 1200,
             'fecha_vencimiento' => null,
         ]);
@@ -203,15 +131,10 @@ class VentaServiceTest extends TestCase
     public function la_venta_de_contado_se_paga_en_su_totalidad(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto(100, 24000); // 1200 por unidad
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 3,
-        ]], [
+        $venta = $this->crearVenta($cliente, 3600, [
             'forma_pago' => 'contado',
             'abono_inicial' => 0,
-            'fecha_vencimiento' => now()->addDays(30)->toDateString(),
         ]);
 
         $this->assertSame(3600.0, (float) $venta->total);
@@ -229,15 +152,8 @@ class VentaServiceTest extends TestCase
     public function la_venta_a_credito_conserva_su_forma_de_pago_aunque_se_pague(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto();
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 1,
-        ]], [
-            'forma_pago' => 'credito',
-            'abono_inicial' => 0,
-        ]);
+        $venta = $this->crearVenta($cliente, 1200);
 
         $this->assertSame('Crédito', $venta->formaPago());
         $this->assertSame('pendiente', $venta->estadoPago());
@@ -260,12 +176,8 @@ class VentaServiceTest extends TestCase
     public function registra_el_abono_inicial_como_pago(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto();
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 2,
-        ]], ['abono_inicial' => 1000, 'metodo_pago' => 'transferencia']);
+        $venta = $this->crearVenta($cliente, 2400, ['abono_inicial' => 1000, 'metodo_pago' => 'transferencia']);
 
         $pago = $venta->pagos()->first();
 
@@ -281,34 +193,55 @@ class VentaServiceTest extends TestCase
     public function rechaza_abono_inicial_mayor_al_total(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto();
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches('/no puede superar el total/');
 
-        $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 1,
-        ]], ['abono_inicial' => 50000]);
+        $this->crearVenta($cliente, 1200, ['abono_inicial' => 50000]);
     }
 
     #[Test]
-    public function anular_revierte_el_stock_y_marca_la_venta(): void
+    public function anular_marca_la_venta(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto(100);
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 2,
-        ]]);
-
-        $this->assertSame(98, $pt->fresh()->inventario->disponible);
+        $venta = $this->crearVenta($cliente);
 
         $anulada = $this->service->anular($venta, 'Error de digitación');
 
         $this->assertSame(Venta::ESTADO_ANULADA, $anulada->estado);
         $this->assertSame('Error de digitación', $anulada->motivo_anulacion);
+        $this->assertNotNull($anulada->anulada_at);
+        $this->assertSame('anulada', $venta->fresh()->estadoPago());
+    }
+
+    #[Test]
+    public function anular_una_venta_antigua_por_productos_revierte_su_stock(): void
+    {
+        $cliente = Cliente::factory()->create();
+        $pt = ProductoTerminado::factory()->create();
+        InventarioProductoTerminado::create([
+            'producto_terminado_id' => $pt->id,
+            'disponible' => 100,
+            'comprometido' => 0,
+        ]);
+
+        $venta = $this->crearVenta($cliente, 2400);
+
+        // Simula una venta registrada con el modelo anterior (con despacho de stock)
+        app(MovimientoInventarioService::class)->registrar([
+            'tipo' => 'venta_despacho',
+            'origen' => $pt,
+            'cantidad' => 2,
+            'documento' => $venta->numero,
+            'fecha' => $venta->fecha,
+            'venta_id' => $venta->id,
+        ]);
+
+        $this->assertSame(98, $pt->fresh()->inventario->disponible);
+
+        $this->service->anular($venta, 'Cliente desistió');
+
         $this->assertSame(100, $pt->fresh()->inventario->disponible);
         $this->assertDatabaseHas('movimientos_inventario', [
             'venta_id' => $venta->id,
@@ -316,19 +249,14 @@ class VentaServiceTest extends TestCase
             'direccion' => 'entrada',
             'cantidad' => 2,
         ]);
-        $this->assertSame('anulada', $venta->fresh()->estadoPago());
     }
 
     #[Test]
     public function no_permite_anular_una_venta_con_abonos(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto();
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 2,
-        ]], ['abono_inicial' => 1000]);
+        $venta = $this->crearVenta($cliente, 2400, ['abono_inicial' => 1000]);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessageMatches('/abonos registrados/');
@@ -340,12 +268,8 @@ class VentaServiceTest extends TestCase
     public function no_permite_anular_dos_veces(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto();
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 1,
-        ]]);
+        $venta = $this->crearVenta($cliente);
 
         $this->service->anular($venta, 'Primera anulación');
 
@@ -359,32 +283,22 @@ class VentaServiceTest extends TestCase
     public function el_servicio_de_pagos_rechaza_abonos_que_superan_el_saldo(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto();
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 1,
-        ]], ['abono_inicial' => 1000]);
-
-        $servicioPagos = app(\App\Services\PagoVentaService::class);
+        $venta = $this->crearVenta($cliente, 1200, ['abono_inicial' => 1000]);
 
         $this->expectException(RuntimeException::class);
 
-        $servicioPagos->registrar($venta->fresh(), ['monto' => 50000, 'metodo' => 'efectivo']);
+        app(PagoVentaService::class)->registrar($venta->fresh(), ['monto' => 50000, 'metodo' => 'efectivo']);
     }
 
     #[Test]
     public function el_servicio_de_pagos_registra_un_abono_valido(): void
     {
         $cliente = Cliente::factory()->create();
-        $pt = $this->producto();
 
-        $venta = $this->crearVenta($cliente, [[
-            'producto_terminado_id' => $pt->id,
-            'cantidad_unidades' => 1,
-        ]], ['abono_inicial' => 0]);
+        $venta = $this->crearVenta($cliente, 1200);
 
-        $pago = app(\App\Services\PagoVentaService::class)
+        $pago = app(PagoVentaService::class)
             ->registrar($venta->fresh(), ['monto' => 1200, 'metodo' => 'nequi']);
 
         $this->assertInstanceOf(PagoVenta::class, $pago);

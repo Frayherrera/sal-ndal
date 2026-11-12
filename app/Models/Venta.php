@@ -82,6 +82,10 @@ class Venta extends Model
         return $this->belongsTo(User::class, 'anulada_por');
     }
 
+    /**
+     * Líneas por producto. Solo existen en ventas antiguas: las ventas nuevas
+     * se registran por valor total y no tienen detalle.
+     */
     public function detalles(): HasMany
     {
         return $this->hasMany(DetalleVenta::class);
@@ -149,10 +153,5 @@ class Venta extends Model
         $forma = $this->forma_pago ?: self::FORMA_CREDITO;
 
         return self::FORMA_PAGO_LABELS[$forma] ?? $forma;
-    }
-
-    public function totalUnidades(): int
-    {
-        return (int) $this->detalles->sum('cantidad_unidades');
     }
 }

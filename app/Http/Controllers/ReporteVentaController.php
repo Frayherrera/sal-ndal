@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DetalleVenta;
 use App\Models\PagoVenta;
 use App\Models\Venta;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,24 +46,5 @@ class ReporteVentaController extends Controller
         });
 
         return view('ventas.reportes.clientes', compact('filas'));
-    }
-
-    public function productos(Request $request): View
-    {
-        $filas = DetalleVenta::query()
-            ->join('ventas', 'ventas.id', '=', 'detalle_venta.venta_id')
-            ->join('producto_terminados', 'producto_terminados.id', '=', 'detalle_venta.producto_terminado_id')
-            ->where('ventas.estado', Venta::ESTADO_CONFIRMADA)
-            ->when($request->filled('desde'), fn (Builder $q) => $q->whereDate('ventas.fecha', '>=', $request->desde))
-            ->when($request->filled('hasta'), fn (Builder $q) => $q->whereDate('ventas.fecha', '<=', $request->hasta))
-            ->groupBy('detalle_venta.producto_terminado_id', 'producto_terminados.nombre', 'producto_terminados.codigo')
-            ->selectRaw('producto_terminados.id as producto_id, producto_terminados.nombre, producto_terminados.codigo')
-            ->selectRaw('SUM(detalle_venta.cantidad_unidades) as unidades')
-            ->selectRaw('SUM(detalle_venta.total) as ingresos')
-            ->orderByDesc('ingresos')
-            ->paginate(25)
-            ->withQueryString();
-
-        return view('ventas.reportes.productos', compact('filas'));
     }
 }

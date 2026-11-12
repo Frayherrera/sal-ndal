@@ -97,36 +97,31 @@ Arquitectura **Controller → Service → Model** (sin Livewire ni Alpine; JS pl
 
 ## Módulo Ventas
 
-Venta de producto terminado **por unidad** con contado/ crédITO, abonos, cartera y reportes. Misma arquitectura Controller → Service → Model, JS plano.
+Venta **por valor total** (sin productos) con contado/crédito, abonos, cartera y reportes. Misma arquitectura Controller → Service → Model, JS plano.
 
-**Cambio a unidades:** El catálogo conserva su `precio_venta` por paquete (20 u), así que el precio unitario se deriva como `precio_venta ÷ 20` y el stock se descuenta en unidades. El modelo `UNIDADES_POR_PAQUETE = 20` se conserva en el catálogo.
+**Cambio a valor total (nov 2026):** la venta ya no lista productos ni descuenta inventario. Se registra cliente + `total` digitado + forma de pago; la descripción va en `observaciones`. No hay descuentos. Las ventas antiguas (por productos/unidades) conservan su `detalle_venta` y sus movimientos `venta_despacho`, y `show`/`recibo` las siguen mostrando con su tabla de productos.
 
 **Tablas (migraciones `2026_11_09_*`):**
-- `ventas` — maestro: `numero` (`VTA-00001`, único), `cliente_id`, `user_id` (vendedor), `fecha`, `subtotal`, `descuento_total`, `total`, `estado` (`confirmada` | `anulada`), `forma_pago` (`contado` | `credito`), `fecha_vencimiento`, `observaciones`, datos de anulación (`anulada_at`, `anulada_por`, `motivo_anulacion`).
-- `detalle_venta` — líneas con snapshot de `precio_unidad` (precio unitario, congelado al momento de la venta), `cantidad_unidades`, `descuento_tipo` (`porcentaje` | `monto`), `descuento_valor`, `descuento_monto`, `subtotal` (bruto) y `total` (neto). Se eliminaron `cantidad_paquetes`, `precio_paquete` y `unidades_por_paquete`.
+- `ventas` — maestro: `numero` (`VTA-00001`, único), `cliente_id`, `user_id` (vendedor), `fecha`, `subtotal`, `descuento_total`, `total`, `estado` (`confirmada` | `anulada`), `forma_pago` (`contado` | `credito`), `fecha_vencimiento`, `observaciones`, datos de anulación (`anulada_at`, `anulada_por`, `motivo_anulacion`). En ventas nuevas `subtotal = total` y `descuento_total = 0`.
+- `detalle_venta` — **solo histórico** (ventas por producto anteriores al cambio): `precio_unidad`, `cantidad_unidades`, descuentos por línea, `subtotal`, `total`. Las ventas nuevas no crean filas aquí.
 - `pago_venta` — abonos: `fecha`, `monto`, `metodo` (`efectivo`, `transferencia`, `nequi`, `daviplata`, `otro`), `referencia`, `nota`, `user_id`. El abono inicial se guarda aquí con nota "Abono inicial".
-- `movimientos_inventario.venta_id` — traza los `venta_despacho` de una venta y permite revertirlos al anular.
+- `movimientos_inventario.venta_id` — traza los `venta_despacho` de ventas antiguas; se revierten al anularlas.
 
 **Reglas de negocio:**
-- Precio unitario = `round(precio_venta / 20, 2)` vía `ProductoTerminado::precio_unitario()`; el catálogo y su seeder **no cambian** (siguen con precio por paquete).
-- `ProductoTerminado::UNIDADES_POR_PAQUETE = 20` se conserva (catálogo/seeder/precio unitario).
-- El stock se descuenta **al confirmar**: `cantidad_unidades` unidades, movimiento `venta_despacho`.
+- `total` obligatorio y mayor a cero (validado en `VentaController::validar()` y en `VentaService::crear()`).
 - **Forma de pago switch:** en el formulario hay un interruptor para seleccionar **Contado** o **Crédito**:
   - **Contado**: el abono inicial cubre el 100% del total automáticamente; no hay fecha de vencimiento; la venta queda "pagada" al instante. En el formulario el campo de abono y el de vencimiento se ocultan.
   - **Crédito**: se ingresa un abono inicial (puede ser 0 o parcial); si queda saldo, la fecha de vencimiento es obligatoria (por defecto +30 días); queda un saldo pendiente.
 - La forma de pago se **guarda** en `ventas.forma_pago` (`Venta::FORMA_CONTADO` / `Venta::FORMA_CREDITO`) y `Venta::formaPago()` devuelve la etiqueta. No se deriva del saldo: una venta a crédito ya pagada sigue mostrándose como "Crédito".
 - Cliente obligatorio, vendedor = usuario autenticado, consecutivo `VTA-00001`, COP, sin IVA ni datos fiscales.
-- Descuento **por línea** (% o monto) con tope en el bruto. Duplicados del mismo producto se permiten como líneas separadas (el stock se valida sumando unidades).
-- Contado o crédito: abono inicial (puede ser 0). Si queda saldo, `fecha_vencimiento` es obligatoria; cartera separada con abonos.
 - Estados de pago derivados (no se guardan): `pagada` / `pendiente` / `vencida` / `anulada`, calculados con `totalPagado()` / `saldo()` (`withSum('pagos','monto')` cuando está disponible).
-- Anulación: solo ventas `confirmada` y **sin abonos**; revierte stock con `MovimientoInventarioService::anular()` (movimientos espejo `anulacion_reversion`). La venta no se borra.
-- Sin IVA y sin datos fiscales en el comprobante. Moneda COP.
+- Anulación: solo ventas `confirmada` y **sin abonos**; marca la venta como anulada (no se borra). Si es una venta antigua con movimientos de inventario, los revierte con `MovimientoInventarioService::anular()` (espejo `anulacion_reversion`).
 
-**Rutas (`/ventas`):** `index`, `crear`, `store`, `{venta}`, `{venta}/recibo` (vista imprimible), `{venta}/anular` (GET/POST), `{venta}/abonos/crear` + `{venta}/abonos`, `cartera`, `reportes/clientes`, `reportes/productos`, `exportar` (CSV). Las rutas estáticas van antes de `{venta}` y éstas usan `whereNumber`.
+**Rutas (`/ventas`):** `index`, `crear`, `store`, `{venta}`, `{venta}/recibo` (vista imprimible), `{venta}/anular` (GET/POST), `{venta}/abonos/crear` + `{venta}/abonos`, `cartera`, `reportes/clientes`, `exportar` (CSV). Las rutas estáticas van antes de `{venta}` y éstas usan `whereNumber`. El reporte `reportes/productos` se eliminó con el cambio a valor total.
 
-**Servicios clave:** `VentaService` (crear, descuentos, validación de stock, anular, nuevo switch contado/ Crédito), `PagoVentaService` (registrar abono, valida saldo y método).
+**Servicios clave:** `VentaService` (crear por valor total con switch contado/crédito, anular), `PagoVentaService` (registrar abono, valida saldo y método).
 
-**Vistas:** `resources/views/ventas/{index,create,show,recibo,anular,cartera,abonos/create,reportes/clientes,reportes/productos}.blade.php`. El formulario de creación usa un switch `Contado/Crédito` y JS plano para recalcular totales/descuentos en vivo.
+**Vistas:** `resources/views/ventas/{index,create,show,recibo,anular,cartera,abonos/create,reportes/clientes}.blade.php`. El formulario de creación tiene un campo de valor total, el switch `Contado/Crédito` y JS plano que recalcula abonado/saldo en vivo. `show` y `recibo` muestran "Venta por valor total" + observaciones, o la tabla de productos si la venta es antigua.
 
 **Dashboard:** `InventarioService::resumen()` agrega `ventas_hoy_*`, `ventas_mes_*`, `cartera_pendiente` y `cartera_vencidas`; el dashboard muestra esas tarjetas y la acción rápida "Registrar Venta" apunta a `ventas.create`.
 
@@ -159,9 +154,9 @@ Venta de producto terminado **por unidad** con contado/ crédITO, abonos, carter
   - `tests/Feature/RecetaFeatureTest.php` — CRUD de recetas/BOM
   - `tests/Feature/ProduccionFeatureTest.php` — producción descuenta MP y suma PT, rechaza sin receta / con stock insuficiente
   - `tests/Feature/ClienteFeatureTest.php` — CRUD de clientes
-  - `tests/Unit/VentaServiceTest.php` — motor de stock, reversiones, stock negativo, nuevo switch contado/ Crédito
+  - `tests/Unit/VentaServiceTest.php` — venta por valor total, contado/crédito, abonos, anulación (incluye reversión de stock de ventas antiguas)
   - `tests/Feature/VentaFeatureTest.php` — listado, formulario, store, recibo, anulación y CSV
-  - `tests/Feature/ReporteVentaFeatureTest.php` — reportes por cliente/producto y filtros de fecha
+  - `tests/Feature/ReporteVentaFeatureTest.php` — reporte por cliente y filtros de fecha
   - `tests/Feature/ViewsSmokeTest.php` — smoke test de render de todas las vistas (incluyendo recetas, producción, clientes y ventas)
 
 **Importante:** El caché de rutas/config (`bootstrap/cache/routes-v7.php`, `config.php`) se regenera apuntando a MySQL RDS y predata a los cambios. Antes de correr tests/artisan localmente conviene limpiarlo (`php artisan config:clear` + `php artisan route:clear`) — el script `composer test` ya hace `config:clear`.
