@@ -56,6 +56,19 @@
                     <dt class="text-white/50">Costo total</dt>
                     <dd class="text-white">{{ $movimiento->costo_total ? '$' . number_format($movimiento->costo_total, 2) : '—' }}</dd>
                 </div>
+                @if ($movimiento->gasto)
+                    <div class="flex justify-between border-b border-white/5 pb-3">
+                        <dt class="text-white/50">Gasto generado</dt>
+                        <dd class="text-white">
+                            <a href="{{ route('gastos.index', ['q' => $movimiento->gasto->numero]) }}" class="font-mono text-blue-300 hover:text-blue-200">
+                                {{ $movimiento->gasto->numero }}
+                            </a>
+                            @if ($movimiento->gasto->estaAnulado())
+                                <span class="ml-1 text-xs text-white/50">(anulado)</span>
+                            @endif
+                        </dd>
+                    </div>
+                @endif
                 <div class="flex justify-between border-b border-white/5 pb-3">
                     <dt class="text-white/50">Registrado por</dt>
                     <dd class="text-white">{{ $movimiento->user?->name ?? '—' }}</dd>

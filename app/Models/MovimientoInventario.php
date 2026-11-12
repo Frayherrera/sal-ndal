@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class MovimientoInventario extends Model
@@ -77,5 +78,13 @@ class MovimientoInventario extends Model
     public function venta(): BelongsTo
     {
         return $this->belongsTo(Venta::class);
+    }
+
+    /**
+     * Gasto generado automáticamente por esta compra (si tenía costo).
+     */
+    public function gasto(): HasOne
+    {
+        return $this->hasOne(Gasto::class);
     }
 }

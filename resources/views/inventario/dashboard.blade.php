@@ -101,6 +101,41 @@
         </a>
     </div>
 
+    <!-- Stats Cards — Gastos -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <a href="{{ route('gastos.index', ['desde' => now()->toDateString(), 'hasta' => now()->toDateString(), 'estado' => 'registrado']) }}" class="glass-card rounded-2xl p-6 animate-fade-in hover:bg-white/10 transition-colors block">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-rose-500/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-receipt text-rose-400 text-xl"></i>
+                </div>
+                <span class="text-xs text-white/50">{{ $gastos_hoy_count }} gastos</span>
+            </div>
+            <div class="text-3xl font-bold text-white mb-1">${{ number_format($gastos_hoy_total, 0, ',', '.') }}</div>
+            <div class="text-sm text-white/50">Gastado hoy</div>
+        </a>
+
+        <a href="{{ route('gastos.reportes.categorias') }}" class="glass-card rounded-2xl p-6 animate-delay-100 hover:bg-white/10 transition-colors block">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-file-invoice-dollar text-orange-400 text-xl"></i>
+                </div>
+                <span class="text-xs text-white/50">{{ $gastos_mes_count }} gastos</span>
+            </div>
+            <div class="text-3xl font-bold text-white mb-1">${{ number_format($gastos_mes_total, 0, ',', '.') }}</div>
+            <div class="text-sm text-white/50">Gastado este mes</div>
+        </a>
+
+        <a href="{{ route('gastos.reportes.resultado') }}" class="glass-card rounded-2xl p-6 animate-delay-200 hover:bg-white/10 transition-colors block">
+            <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center mb-4">
+                <i class="fas fa-scale-balanced text-blue-400 text-xl"></i>
+            </div>
+            <div class="text-3xl font-bold {{ $resultado_mes >= 0 ? 'text-white' : 'text-red-300' }} mb-1">
+                {{ $resultado_mes < 0 ? '−' : '' }}${{ number_format(abs($resultado_mes), 0, ',', '.') }}
+            </div>
+            <div class="text-sm text-white/50">Ventas − gastos del mes</div>
+        </a>
+    </div>
+
     <div class="grid lg:grid-cols-3 gap-6">
         <!-- Recent Activity -->
         <div class="lg:col-span-2 glass-card rounded-2xl p-6 animate-fade-in">
@@ -158,6 +193,12 @@
                    class="flex items-center gap-3 p-3 rounded-xl bg-green-500/20 hover:bg-green-500/30 text-green-300 transition-colors w-full text-left">
                     <i class="fas fa-tag w-5 text-center"></i>
                     <span class="text-sm font-medium">Registrar Venta</span>
+                </a>
+
+                <a href="{{ route('gastos.create') }}"
+                   class="flex items-center gap-3 p-3 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 transition-colors w-full text-left">
+                    <i class="fas fa-receipt w-5 text-center"></i>
+                    <span class="text-sm font-medium">Registrar Gasto</span>
                 </a>
 
                 <a href="{{ route('inventario.conteo-fisico.create', ['tipo' => 'materia_prima']) }}"

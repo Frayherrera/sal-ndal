@@ -127,6 +127,34 @@ Venta **por valor total** (sin productos) con contado/crédito, abonos, cartera 
 
 **Menú:** ítems "Ventas" (`fa-cash-register`) y "Cartera" (`fa-wallet`) en `layouts/app.blade.php`.
 
+## Módulo Gastos
+
+Registro de gastos operativos con categorías editables, más un **gasto automático por cada compra de materia prima con costo**. Misma arquitectura Controller → Service → Model, JS plano.
+
+**Tablas (migraciones `2026_11_12_*`):**
+- `categorias_gasto` — `nombre` (único), `descripcion`, `clave` (única, nullable), `activo`. La migración **inserta las categorías iniciales** (Arriendo, Servicios públicos, Nómina, etc.) para que existan también en producción. La categoría con `clave = compra_materia_prima` es del sistema: no se elimina, no se desactiva y no aparece en el formulario de gastos manuales.
+- `gastos` — `numero` (`GTO-00001`), `fecha` (date), `categoria_gasto_id`, `descripcion`, `monto`, `metodo_pago` (nullable, mismos valores que `PagoVenta::METODOS`), `proveedor`, `estado` (`registrado` | `anulado`), `movimiento_inventario_id` (único, nullable: gasto automático), `user_id`, datos de anulación (`anulado_at`, `anulado_por`, `motivo_anulacion`).
+
+**Reglas de negocio:**
+- **Gasto automático:** `MovimientoInventarioService::registrar()` llama a `GastoService::registrarDesdeCompra()` dentro de la misma transacción cuando el tipo es `compra_recepcion` y `costo_total > 0`. Toma el proveedor de la materia prima y arma la descripción con nombre, cantidad (kg) y documento.
+- En el formulario de movimientos el **costo total es obligatorio para compras** (`required_if:tipo,compra_recepcion`). A nivel de servicio sigue siendo opcional (sin costo no se crea gasto).
+- `MovimientoInventarioService::anular()` anula también el gasto de esa compra (`GastoService::anularPorMovimiento()`).
+- Los gastos automáticos **no se editan ni se anulan desde Gastos**: se corrigen anulando la compra en Movimientos.
+- Los gastos manuales se editan y se anulan (con motivo); nunca se borran. Las categorías con gastos no se eliminan, solo se desactivan.
+- Los totales, reportes y el dashboard solo suman gastos `registrado`.
+
+**Rutas (`/gastos`):** `index`, `crear`, `store`, `exportar` (CSV), `reportes/categorias`, `reportes/resultado`, `categorias` (resource sin `show`), `{gasto}/editar`, `{gasto}` (PUT), `{gasto}/anular` (GET/POST). Rutas estáticas antes de `{gasto}`, que usa `whereNumber`.
+
+**Reportes:** `ReporteGastoController::categorias()` (totales y % por categoría, por defecto el mes actual) y `resultado()` (por mes de un año: vendido, cobrado, gastado y ventas − gastos; se agrupa en PHP para no depender del motor de BD).
+
+**Servicios clave:** `GastoService` (crear, actualizar, anular, gasto automático de compras), `CategoriaGastoService` (CRUD con protección de la categoría del sistema).
+
+**Vistas:** `resources/views/gastos/{index,create,edit,_form,anular,categorias/{index,create,edit,_form},reportes/{categorias,resultado}}.blade.php`. El detalle de un movimiento muestra el gasto que generó (`MovimientoInventario::gasto()`).
+
+**Dashboard:** `InventarioService::resumen()` agrega `gastos_hoy_*`, `gastos_mes_*` y `resultado_mes` (ventas − gastos del mes); el dashboard muestra esas tarjetas y la acción rápida "Registrar Gasto".
+
+**Menú:** ítem "Gastos" (`fa-receipt`) en `layouts/app.blade.php`.
+
 ## Known Issues
 
 1. ~~**Dual JS loading:** cargaban JS vía `@vite()` y `asset('js/app.js')` — el service worker se registraba dos veces.~~ Corregido: se usa solo `@vite(['resources/js/app.js'])`.
@@ -157,7 +185,9 @@ Venta **por valor total** (sin productos) con contado/crédito, abonos, cartera 
   - `tests/Unit/VentaServiceTest.php` — venta por valor total, contado/crédito, abonos, anulación (incluye reversión de stock de ventas antiguas)
   - `tests/Feature/VentaFeatureTest.php` — listado, formulario, store, recibo, anulación y CSV
   - `tests/Feature/ReporteVentaFeatureTest.php` — reporte por cliente y filtros de fecha
-  - `tests/Feature/ViewsSmokeTest.php` — smoke test de render de todas las vistas (incluyendo recetas, producción, clientes y ventas)
+  - `tests/Unit/GastoServiceTest.php` — gastos manuales, gasto automático de compras, anulación en cascada, protección de categorías
+  - `tests/Feature/GastoFeatureTest.php` — listado, filtros, CRUD, costo obligatorio en compras, CSV, reportes, dashboard y categorías
+  - `tests/Feature/ViewsSmokeTest.php` — smoke test de render de todas las vistas (incluyendo recetas, producción, clientes, ventas y gastos)
 
 **Importante:** El caché de rutas/config (`bootstrap/cache/routes-v7.php`, `config.php`) se regenera apuntando a MySQL RDS y predata a los cambios. Antes de correr tests/artisan localmente conviene limpiarlo (`php artisan config:clear` + `php artisan route:clear`) — el script `composer test` ya hace `config:clear`.
 

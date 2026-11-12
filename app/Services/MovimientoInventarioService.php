@@ -36,7 +36,7 @@ class MovimientoInventarioService
         return DB::transaction(function () use ($data, $origen, $cantidad, $tipo, $direccion) {
             $nuevoSaldo = $this->aplicarStock($tipo, $origen, $cantidad);
 
-            return MovimientoInventario::create([
+            $movimiento = MovimientoInventario::create([
                 'tipo' => $tipo,
                 'origen_type' => $origen->getMorphClass(),
                 'origen_id' => $origen->getKey(),
@@ -53,6 +53,13 @@ class MovimientoInventarioService
                 'venta_id' => $data['venta_id'] ?? null,
                 'fecha' => $data['fecha'] ?? now(),
             ]);
+
+            // Las compras con costo generan su gasto automáticamente
+            if ($tipo === 'compra_recepcion') {
+                app(GastoService::class)->registrarDesdeCompra($movimiento);
+            }
+
+            return $movimiento;
         });
     }
 
@@ -355,6 +362,9 @@ class MovimientoInventarioService
             $nuevoSaldo = $origen instanceof MateriaPrima
                 ? $this->aplicarStockMateriaPrima($origen, $cantidad, $direccionRevertida)
                 : $this->aplicarStockProducto($origen, $cantidad, $direccionRevertida);
+
+            // Si la compra generó un gasto, se anula junto con ella
+            app(GastoService::class)->anularPorMovimiento($movimiento, $motivo);
 
             return MovimientoInventario::create([
                 'tipo' => 'anulacion_reversion',

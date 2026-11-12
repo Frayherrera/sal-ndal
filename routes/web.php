@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\CarteraController;
+use App\Http\Controllers\CategoriaGastoController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ConteoFisicoController;
+use App\Http\Controllers\GastoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MateriaPrimaController;
@@ -12,6 +14,7 @@ use App\Http\Controllers\PagoVentaController;
 use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\ProductoTerminadoController;
 use App\Http\Controllers\RecetaController;
+use App\Http\Controllers\ReporteGastoController;
 use App\Http\Controllers\ReporteVentaController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Route;
@@ -125,5 +128,24 @@ Route::middleware('auth')->group(function () {
         Route::post('{venta}/anular', [VentaController::class, 'anular'])->whereNumber('venta')->name('anular.store');
         Route::get('{venta}/abonos/crear', [PagoVentaController::class, 'create'])->whereNumber('venta')->name('abonos.create');
         Route::post('{venta}/abonos', [PagoVentaController::class, 'store'])->whereNumber('venta')->name('abonos.store');
+    });
+
+    // Gastos
+    Route::prefix('gastos')->name('gastos.')->group(function () {
+        Route::get('/', [GastoController::class, 'index'])->name('index');
+        Route::get('crear', [GastoController::class, 'create'])->name('create');
+        Route::post('/', [GastoController::class, 'store'])->name('store');
+        Route::get('exportar', [GastoController::class, 'export'])->name('export');
+        Route::get('reportes/categorias', [ReporteGastoController::class, 'categorias'])->name('reportes.categorias');
+        Route::get('reportes/resultado', [ReporteGastoController::class, 'resultado'])->name('reportes.resultado');
+
+        Route::resource('categorias', CategoriaGastoController::class)
+            ->parameters(['categorias' => 'categoria'])
+            ->except('show');
+
+        Route::get('{gasto}/editar', [GastoController::class, 'edit'])->whereNumber('gasto')->name('edit');
+        Route::put('{gasto}', [GastoController::class, 'update'])->whereNumber('gasto')->name('update');
+        Route::get('{gasto}/anular', [GastoController::class, 'anularView'])->whereNumber('gasto')->name('anular');
+        Route::post('{gasto}/anular', [GastoController::class, 'anular'])->whereNumber('gasto')->name('anular.store');
     });
 });

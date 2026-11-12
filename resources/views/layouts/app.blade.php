@@ -147,6 +147,7 @@
                     ['route' => 'clientes.index', 'label' => 'Clientes', 'icon' => 'users', 'active' => request()->routeIs('clientes.*')],
                     ['route' => 'ventas.index', 'label' => 'Ventas', 'icon' => 'cash-register', 'active' => request()->routeIs('ventas.index', 'ventas.create', 'ventas.show', 'ventas.recibo', 'ventas.anular', 'ventas.abonos.*', 'ventas.reportes.*')],
                     ['route' => 'ventas.cartera', 'label' => 'Cartera', 'icon' => 'wallet', 'active' => request()->routeIs('ventas.cartera')],
+                    ['route' => 'gastos.index', 'label' => 'Gastos', 'icon' => 'receipt', 'active' => request()->routeIs('gastos.*')],
                     ['route' => 'inventario.recetas.index', 'label' => 'Recetas', 'icon' => 'book-open', 'active' => request()->routeIs('inventario.recetas.*')],
                     ['route' => 'inventario.produccion.create', 'label' => 'Producción', 'icon' => 'industry', 'active' => request()->routeIs('inventario.produccion.*')],
                     ['route' => 'inventario.movimientos.index', 'label' => 'Movimientos', 'icon' => 'arrows-rotate', 'active' => request()->routeIs('inventario.movimientos.*')],

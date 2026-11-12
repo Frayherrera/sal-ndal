@@ -104,9 +104,13 @@
                 <!-- Campos de costo (solo compra) -->
                 <div class="grid sm:grid-cols-2 gap-5 mb-5 hidden" id="campoCosto">
                     <div>
-                        <label class="block text-sm font-medium text-white/80 mb-2">Costo total ($)</label>
-                        <input type="number" step="0.01" min="0" name="costo_total" value="{{ old('costo_total') }}"
+                        <label class="block text-sm font-medium text-white/80 mb-2">Costo total ($) <span id="costoReq"></span></label>
+                        <input type="number" step="0.01" min="0" name="costo_total" id="costoInput" value="{{ old('costo_total') }}"
                                class="input-glass">
+                        <p class="text-xs text-white/40 mt-1 hidden" id="costoHint">
+                            <i class="fas fa-receipt mr-1"></i>Se registra automáticamente como gasto "Compra de materia prima".
+                        </p>
+                        @error('costo_total') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-white/80 mb-2">Referencia</label>
@@ -165,6 +169,9 @@
         campoMateria.classList.toggle('hidden', !esMateria);
         campoProducto.classList.toggle('hidden', !esProducto);
         campoCosto.classList.toggle('hidden', !esCompra && !esAjuste);
+        document.getElementById('costoReq').textContent = esCompra ? '*' : '';
+        document.getElementById('costoHint').classList.toggle('hidden', !esCompra);
+        document.getElementById('costoInput').required = esCompra;
         campoDevolucion.classList.toggle('hidden', !esDevolucion);
 
         if (esAjuste) {

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Gasto;
 use App\Models\MateriaPrima;
 use App\Models\MovimientoInventario;
 use App\Models\PagoVenta;
@@ -45,6 +46,16 @@ class InventarioService
             ->filter(fn (Venta $venta) => $venta->saldo() > 0)
             ->count();
 
+        $gastosHoy = Gasto::where('estado', Gasto::ESTADO_REGISTRADO)
+            ->whereDate('fecha', now()->toDateString());
+
+        $gastosMes = Gasto::where('estado', Gasto::ESTADO_REGISTRADO)
+            ->whereYear('fecha', now()->year)
+            ->whereMonth('fecha', now()->month);
+
+        $ventasMesTotal = (float) (clone $ventasMes)->sum('total');
+        $gastosMesTotal = (float) (clone $gastosMes)->sum('monto');
+
         return [
             'stock_materia_prima_kg' => $stockMateriaPrimaKg,
             'materias_primas_count' => $materiasPrimasActivas->count(),
@@ -55,10 +66,15 @@ class InventarioService
             'movimientos_recientes' => $movimientosRecientes,
             'ventas_hoy_total' => (float) (clone $ventasHoy)->sum('total'),
             'ventas_hoy_count' => (clone $ventasHoy)->count(),
-            'ventas_mes_total' => (float) (clone $ventasMes)->sum('total'),
+            'ventas_mes_total' => $ventasMesTotal,
             'ventas_mes_count' => (clone $ventasMes)->count(),
             'cartera_pendiente' => round(max($totalConfirmado - $totalPagado, 0), 2),
             'cartera_vencidas' => $carteraVencida,
+            'gastos_hoy_total' => (float) (clone $gastosHoy)->sum('monto'),
+            'gastos_hoy_count' => (clone $gastosHoy)->count(),
+            'gastos_mes_total' => $gastosMesTotal,
+            'gastos_mes_count' => (clone $gastosMes)->count(),
+            'resultado_mes' => round($ventasMesTotal - $gastosMesTotal, 2),
         ];
     }
 

@@ -157,9 +157,12 @@ class MovimientoInventarioController extends Controller
             'referencia' => ['nullable', 'string', 'max:120'],
             'motivo' => ['nullable', 'string', 'max:500'],
             'costo_unitario' => ['nullable', 'numeric', 'min:0'],
-            'costo_total' => ['nullable', 'numeric', 'min:0'],
+            // El costo de una compra es obligatorio: genera el gasto automático
+            'costo_total' => ['nullable', 'required_if:tipo,compra_recepcion', 'numeric', 'min:0'],
             'fecha' => ['nullable', 'date'],
             'direccion_devolucion' => ['nullable', 'in:entrada,salida'],
+        ], [
+            'costo_total.required_if' => 'Indica el costo total de la compra (se registra como gasto).',
         ]);
     }
 }

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Cliente;
 use App\Models\ConteoFisico;
+use App\Models\Gasto;
 use App\Models\InventarioMateriaPrima;
 use App\Models\InventarioProductoTerminado;
 use App\Models\MateriaPrima;
@@ -30,6 +31,30 @@ class ViewsSmokeTest extends TestCase
     public function dashboard_se_renders(): void
     {
         $this->actingAs($this->user)->get('/gestion')->assertOk();
+    }
+
+    #[Test]
+    public function vistas_de_gastos_se_renders(): void
+    {
+        $gasto = Gasto::factory()->create(['user_id' => $this->user->id, 'numero' => 'GTO-00001']);
+        $anulado = Gasto::factory()->create([
+            'user_id' => $this->user->id,
+            'numero' => 'GTO-00002',
+            'estado' => Gasto::ESTADO_ANULADO,
+            'motivo_anulacion' => 'Prueba',
+            'anulado_at' => now(),
+        ]);
+
+        $this->actingAs($this->user)->get('/gastos')->assertOk();
+        $this->actingAs($this->user)->get('/gastos/crear')->assertOk();
+        $this->actingAs($this->user)->get("/gastos/{$gasto->id}/editar")->assertOk();
+        $this->actingAs($this->user)->get("/gastos/{$gasto->id}/anular")->assertOk();
+        $this->actingAs($this->user)->get("/gastos/{$anulado->id}/anular")->assertOk()->assertSee('Prueba');
+        $this->actingAs($this->user)->get('/gastos/categorias')->assertOk();
+        $this->actingAs($this->user)->get('/gastos/categorias/create')->assertOk();
+        $this->actingAs($this->user)->get("/gastos/categorias/{$gasto->categoria_gasto_id}/edit")->assertOk();
+        $this->actingAs($this->user)->get('/gastos/reportes/categorias')->assertOk();
+        $this->actingAs($this->user)->get('/gastos/reportes/resultado')->assertOk();
     }
 
     #[Test]
