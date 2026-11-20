@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\ConteoFisico;
 use App\Models\DetalleConteoFisico;
+use App\Models\MateriaPrima;
+use App\Models\ProductoTerminado;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -30,26 +32,83 @@ class ConteoFisicoService
         return ConteoFisico::create($data);
     }
 
+    /**
+     * Reemplaza las líneas del conteo.
+     *
+     * Cada línea trae el artículo (`materia_prima_id` o `producto_terminado_id`
+     * según el tipo del conteo), la `cantidad_fisica` en la unidad interna
+     * (gramos para materia prima, unidades para producto) y un `motivo` opcional.
+     *
+     * El `stock_sistema` lo toma el servidor del inventario en este momento
+     * (cualquier valor enviado se ignora), y la diferencia = físico − sistema.
+     * Al aprobar se aplica esa diferencia, así que los movimientos posteriores
+     * al conteo no se pierden.
+     *
+     * @param  array<int, array<string, mixed>>  $detalles
+     */
     public function registrarDetalle(ConteoFisico $conteo, array $detalles): ConteoFisico
     {
         $this->verificarEditable($conteo);
 
-        return DB::transaction(function () use ($conteo, $detalles) {
+        $esMateria = $conteo->tipo === 'materia_prima';
+        $campo = $esMateria ? 'materia_prima_id' : 'producto_terminado_id';
+        $modelo = $esMateria ? MateriaPrima::class : ProductoTerminado::class;
+
+        $lineas = [];
+
+        foreach ($detalles as $d) {
+            $id = (int) ($d[$campo] ?? 0);
+
+            if ($id <= 0) {
+                throw new RuntimeException('Selecciona el '.($esMateria ? 'material' : 'producto').' en todas las líneas.');
+            }
+
+            if (isset($lineas[$id])) {
+                throw new RuntimeException('Un mismo artículo aparece en dos líneas. Deja una sola línea por artículo.');
+            }
+
+            $cantidad = $d['cantidad_fisica'] ?? null;
+
+            if ($cantidad === null || $cantidad === '' || ! is_numeric($cantidad) || (float) $cantidad < 0) {
+                throw new RuntimeException('Indica la cantidad contada (0 o más) en todas las líneas.');
+            }
+
+            $motivo = trim((string) ($d['motivo'] ?? ''));
+
+            $lineas[$id] = [
+                'cantidad_fisica' => (int) round((float) $cantidad),
+                'motivo' => $motivo !== '' ? $motivo : null,
+            ];
+        }
+
+        if ($lineas === []) {
+            throw new RuntimeException('Debes registrar al menos una línea.');
+        }
+
+        $articulos = $modelo::with('inventario')->whereIn('id', array_keys($lineas))->get()->keyBy('id');
+
+        if ($articulos->count() !== count($lineas)) {
+            throw new RuntimeException('Uno de los artículos seleccionados no existe.');
+        }
+
+        return DB::transaction(function () use ($conteo, $lineas, $articulos, $campo, $esMateria) {
             $conteo->detalles()->delete();
 
-            foreach ($detalles as $d) {
+            foreach ($lineas as $id => $linea) {
+                $articulo = $articulos->get($id);
+                $stockSistema = $esMateria ? $articulo->stock_gramos() : $articulo->stock_disponible();
+
                 DetalleConteoFisico::create([
                     'conteo_fisico_id' => $conteo->id,
-                    'materia_prima_id' => $d['materia_prima_id'] ?? null,
-                    'producto_terminado_id' => $d['producto_terminado_id'] ?? null,
-                    'stock_sistema' => $d['stock_sistema'] ?? 0,
-                    'cantidad_fisica' => $d['cantidad_fisica'] ?? 0,
-                    'diferencia' => ($d['cantidad_fisica'] ?? 0) - ($d['stock_sistema'] ?? 0),
-                    'motivo' => $d['motivo'] ?? null,
+                    $campo => $id,
+                    'stock_sistema' => $stockSistema,
+                    'cantidad_fisica' => $linea['cantidad_fisica'],
+                    'diferencia' => $linea['cantidad_fisica'] - $stockSistema,
+                    'motivo' => $linea['motivo'],
                 ]);
             }
 
-            return $conteo;
+            return $conteo->load('detalles');
         });
     }
 
@@ -137,10 +196,14 @@ class ConteoFisicoService
         return $conteo;
     }
 
+    /**
+     * Solo un borrador admite cambios: al completarlo, las líneas quedan fijas
+     * para revisión. Si hay que corregirlo, se anula y se hace uno nuevo.
+     */
     private function verificarEditable(ConteoFisico $conteo): void
     {
-        if (! in_array($conteo->estado, ['borrador', 'completado'], true)) {
-            throw new RuntimeException('No se puede modificar un conteo aprobado o anulado.');
+        if ($conteo->estado !== 'borrador') {
+            throw new RuntimeException('Solo se pueden modificar las líneas de un conteo en borrador.');
         }
     }
 }

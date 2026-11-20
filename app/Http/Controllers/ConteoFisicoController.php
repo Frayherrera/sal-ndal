@@ -58,14 +58,12 @@ class ConteoFisicoController extends Controller
 
     public function registrarDetalle(Request $request, ConteoFisico $conteo): RedirectResponse
     {
-        $detalles = $this->validarDetalles($request, $conteo->tipo);
-
         try {
-            $this->service->registrarDetalle($conteo, $detalles);
+            $this->service->registrarDetalle($conteo, $this->prepararDetalles($request, $conteo->tipo));
 
-            return back()->with('success', 'Detalles guardados.');
+            return back()->with('success', 'Líneas del conteo guardadas.');
         } catch (\RuntimeException $e) {
-            return back()->with('error', $e->getMessage());
+            return back()->withInput()->with('error', $e->getMessage());
         }
     }
 
@@ -106,21 +104,54 @@ class ConteoFisicoController extends Controller
         }
     }
 
-    private function validarDetalles(Request $request, string $tipo): array
+    /**
+     * Normaliza las líneas del formulario para el servicio.
+     *
+     * - Ignora las filas totalmente vacías (sin artículo ni cantidad).
+     * - La materia prima se digita en su `unidad_base` (kg o g) y se convierte a
+     *   gramos; el producto terminado se digita en unidades.
+     * - El stock del sistema no se toma del formulario: lo calcula el servicio.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function prepararDetalles(Request $request, string $tipo): array
     {
         $detalles = $request->input('detalles', []);
 
-        if (! is_array($detalles) || count($detalles) === 0) {
-            throw new \RuntimeException('Debe registrar al menos un detalle.');
+        if (! is_array($detalles)) {
+            throw new \RuntimeException('Debes registrar al menos una línea.');
         }
 
+        $esMateria = $tipo === 'materia_prima';
+        $campo = $esMateria ? 'materia_prima_id' : 'producto_terminado_id';
+
+        $materias = $esMateria
+            ? MateriaPrima::whereIn('id', collect($detalles)->pluck($campo)->filter()->all())->get()->keyBy('id')
+            : collect();
+
         $result = [];
+
         foreach ($detalles as $d) {
+            if (! is_array($d)) {
+                continue;
+            }
+
+            $id = $d[$campo] ?? null;
+            $cantidad = $d['cantidad_fisica'] ?? null;
+
+            if (blank($id) && blank($cantidad)) {
+                continue;
+            }
+
+            if (is_numeric($cantidad) && $esMateria && ($materia = $materias->get((int) $id))) {
+                $cantidad = $materia->unidad_base === 'kg'
+                    ? (int) round((float) $cantidad * 1000)
+                    : (int) round((float) $cantidad);
+            }
+
             $result[] = [
-                'materia_prima_id' => $tipo === 'materia_prima' ? ($d['materia_prima_id'] ?? null) : null,
-                'producto_terminado_id' => $tipo === 'producto_terminado' ? ($d['producto_terminado_id'] ?? null) : null,
-                'stock_sistema' => (int) ($d['stock_sistema'] ?? 0),
-                'cantidad_fisica' => (int) ($d['cantidad_fisica'] ?? 0),
+                $campo => $id,
+                'cantidad_fisica' => $cantidad,
                 'motivo' => $d['motivo'] ?? null,
             ];
         }

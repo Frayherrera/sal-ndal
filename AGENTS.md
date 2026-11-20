@@ -88,6 +88,12 @@ Arquitectura **Controller → Service → Model** (sin Livewire ni Alpine; JS pl
 
 **Servicios clave:** `app/Services/MovimientoInventarioService.php` (motor de stock, `producir()`, transacciones, validación de stock negativo, anulaciones por reversión), `RecetaService.php` (CRUD de recetas/BOM), `ConteoFisicoService.php` (aprobación genera ajustes), `InventarioService.php` (dashboard + alertas).
 
+**Conteo físico (`/inventario/conteo-fisico`):** borrador → completado → aprobado (o anulado desde borrador/completado).
+- Solo un **borrador** admite cambios de líneas; completado queda fijo para revisión (si hay error, se anula y se crea otro).
+- `ConteoFisicoService::registrarDetalle()` reemplaza las líneas: una por artículo (rechaza duplicados, líneas sin artículo o sin cantidad). El **`stock_sistema` lo toma el servidor** del inventario al guardar (lo que envíe el cliente se ignora) y `diferencia = cantidad_fisica − stock_sistema`.
+- Al aprobar se genera un `ajuste_positivo`/`ajuste_negativo` por la **diferencia** (no se fuerza el stock al valor contado), así que los movimientos posteriores al conteo se conservan.
+- El formulario captura la materia prima en su `unidad_base` (kg o g) y el controlador la convierte a gramos; producto terminado en unidades. Los campos van **con índice por fila** (`detalles[i][campo]`): con `detalles[][campo]` PHP separa cada campo en una línea distinta. Las filas vacías se ignoran.
+
 **Notas de implementación:**
 - No se borran movimientos: se anulan creando una reversión espejo.
 - Stock negativo prohibido por defecto (configurable vía `permitir_stock_negativo`).
@@ -155,6 +161,25 @@ Registro de gastos operativos con categorías editables, más un **gasto automá
 
 **Menú:** ítem "Gastos" (`fa-receipt`) en `layouts/app.blade.php`.
 
+## Bot de Telegram
+
+Bot para **consultar** y **registrar** desde Telegram. Recibe los mensajes por **webhook** (`POST /telegram/webhook`, sin sesión ni CSRF) y solo atiende los **chats autorizados**.
+
+**Configuración (`.env`, leída en `config/services.php` → `telegram`):**
+- `TELEGRAM_BOT_TOKEN` (de @BotFather), `TELEGRAM_WEBHOOK_SECRET` (texto aleatorio; Telegram lo envía en la cabecera `X-Telegram-Bot-Api-Secret-Token` y el webhook responde 403 si no coincide o si no está definido), `TELEGRAM_ALLOWED_CHAT_IDS` (IDs separados por coma), `TELEGRAM_USER_EMAIL` (usuario a cuyo nombre quedan los registros; por defecto `ADMIN_EMAIL`).
+- Un chat no autorizado recibe su propio ID para poder agregarlo.
+- Webhook: `php artisan telegram:webhook set [--url=https://...]` (exige HTTPS; usa `APP_URL` si no se pasa `--url`; también publica el menú de comandos), `telegram:webhook info`, `telegram:webhook delete`. En local hace falta un túnel HTTPS (p. ej. `cloudflared tunnel --url http://localhost:8080`).
+
+**Código (`app/Services/Telegram/`):**
+- `TelegramClient` — llamadas a la Bot API con `Http` (en tests: `Http::fake()`). No propaga la URL en errores de conexión porque incluye el token.
+- `TelegramBot` — procesa updates: enruta comandos (acepta `/cmd@NombreBot`), autoriza el chat y maneja los botones de confirmación. `TelegramBot::COMANDOS` es el menú publicado.
+- `TelegramConsultas` — `/resumen` (usa `InventarioService::resumen()`), `/cartera [cliente]`, `/stock texto`, `/alertas`, `/ventas [n]`, `/gastos [n]`.
+- `TelegramRegistros` — `/gasto valor descripción [| categoría]` (categoría por defecto «Otros»), `/venta cliente valor [contado|credito] [| nota]` (crédito: vence a 30 días, sin abono), `/abono cliente valor [método]` (se reparte entre las ventas con saldo más antiguas). Usa `GastoService`, `VentaService` y `PagoVentaService`.
+- `BuscadorTelegram` — encuentra cliente (por nombre o local) y categoría sin distinguir mayúsculas, tildes ni espacios: exacto → empieza por → contiene; si hay varios, pide precisar.
+- `TelegramFormato` — dinero, escape HTML, normalización y `monto()` (acepta 70000, 70.000, 70,000, $70.000, 70k, 1,5m).
+
+**Flujo de los registros:** `preparar*()` interpreta el texto y **no guarda nada**; el bot muestra el resumen con botones ✅/❌ y guarda la acción en caché 15 minutos (`telegram:confirmacion:{token}`, `CACHE_STORE=database`). Al confirmar, `ejecutar()` guarda con los servicios de la app, que **revalidan** (el saldo pudo cambiar). El botón solo sirve una vez y solo desde el mismo chat. El webhook responde siempre 200 a Telegram (si no, reintenta el update) y registra los errores en el log.
+
 ## Known Issues
 
 1. ~~**Dual JS loading:** cargaban JS vía `@vite()` y `asset('js/app.js')` — el service worker se registraba dos veces.~~ Corregido: se usa solo `@vite(['resources/js/app.js'])`.
@@ -177,7 +202,8 @@ Registro de gastos operativos con categorías editables, más un **gasto automá
 > Si alguna vez los tests vuelven a borrar datos, revisa primero esos dos archivos.
 - Tests del módulo inventario:
   - `tests/Unit/MovimientoInventarioServiceTest.php` — motor de stock, reversiones, stock negativo
-  - `tests/Unit/ConteoFisicoServiceTest.php` — flujo de conteo y generación de ajustes
+  - `tests/Unit/ConteoFisicoServiceTest.php` — flujo de conteo, stock del sistema calculado en servidor, validación de líneas, ajustes por diferencia
+  - `tests/Feature/ConteoFisicoFeatureTest.php` — conteo vía formulario (campos `detalles[i][...]`, kg → g, filas vacías, completado no editable)
   - `tests/Feature/MateriaPrimaFeatureTest.php`, `ProductoTerminadoFeatureTest.php`, `MovimientoInventarioFeatureTest.php`
   - `tests/Feature/RecetaFeatureTest.php` — CRUD de recetas/BOM
   - `tests/Feature/ProduccionFeatureTest.php` — producción descuenta MP y suma PT, rechaza sin receta / con stock insuficiente
@@ -187,6 +213,7 @@ Registro de gastos operativos con categorías editables, más un **gasto automá
   - `tests/Feature/ReporteVentaFeatureTest.php` — reporte por cliente y filtros de fecha
   - `tests/Unit/GastoServiceTest.php` — gastos manuales, gasto automático de compras, anulación en cascada, protección de categorías
   - `tests/Feature/GastoFeatureTest.php` — listado, filtros, CRUD, costo obligatorio en compras, CSV, reportes, dashboard y categorías
+  - `tests/Feature/TelegramBotTest.php` — bot de Telegram: secreto del webhook, chats autorizados, consultas, registros con confirmación, reparto de abonos, montos y comando `telegram:webhook`
   - `tests/Feature/ViewsSmokeTest.php` — smoke test de render de todas las vistas (incluyendo recetas, producción, clientes, ventas y gastos)
 
 **Importante:** El caché de rutas/config (`bootstrap/cache/routes-v7.php`, `config.php`) se regenera apuntando a MySQL RDS y predata a los cambios. Antes de correr tests/artisan localmente conviene limpiarlo (`php artisan config:clear` + `php artisan route:clear`) — el script `composer test` ya hace `config:clear`.

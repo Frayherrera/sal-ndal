@@ -16,6 +16,7 @@ use App\Http\Controllers\ProductoTerminadoController;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\ReporteGastoController;
 use App\Http\Controllers\ReporteVentaController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,11 @@ Route::get('/', function () {
 Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticate']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// Bot de Telegram: lo llama Telegram (sin sesión ni CSRF; se valida con la cabecera secreta)
+Route::post('/telegram/webhook', TelegramWebhookController::class)
+    ->middleware('throttle:120,1')
+    ->name('telegram.webhook');
 
 // Rutas protegidas — Módulo Inventario
 Route::middleware('auth')->group(function () {

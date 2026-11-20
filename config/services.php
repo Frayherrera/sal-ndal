@@ -35,4 +35,22 @@ return [
         ],
     ],
 
+    /*
+    | Bot de Telegram (consultas y registros). Ver la sección "Bot de Telegram" en AGENTS.md.
+    | - token: lo entrega @BotFather.
+    | - webhook_secret: texto aleatorio; Telegram lo envía en la cabecera
+    |   X-Telegram-Bot-Api-Secret-Token y el webhook rechaza lo que no lo traiga.
+    | - allowed_chat_ids: IDs de chat autorizados, separados por coma.
+    | - user_email: usuario del sistema a cuyo nombre quedan los registros del bot.
+    */
+    'telegram' => [
+        'token' => env('TELEGRAM_BOT_TOKEN'),
+        'webhook_secret' => env('TELEGRAM_WEBHOOK_SECRET'),
+        'allowed_chat_ids' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('TELEGRAM_ALLOWED_CHAT_IDS', ''))
+        ))),
+        'user_email' => env('TELEGRAM_USER_EMAIL', env('ADMIN_EMAIL', 'admin@admin.co')),
+    ],
+
 ];
