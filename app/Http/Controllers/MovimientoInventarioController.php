@@ -36,7 +36,8 @@ class MovimientoInventarioController extends Controller
 
     public function create(Request $request): View
     {
-        $tipos = MovimientoInventario::TIPOS;
+        // Los tipos del camión solo los genera el módulo Camión
+        $tipos = array_diff_key(MovimientoInventario::TIPOS, array_flip(MovimientoInventario::TIPOS_AUTOMATICOS));
         $materiasPrimas = MateriaPrima::where('activo', true)->orderBy('nombre')->get();
         $productos = ProductoTerminado::where('activo', true)->orderBy('nombre')->get();
 
@@ -149,7 +150,7 @@ class MovimientoInventarioController extends Controller
     private function validar(Request $request): array
     {
         return $request->validate([
-            'tipo' => ['required', 'in:'.implode(',', array_keys(MovimientoInventario::TIPOS))],
+            'tipo' => ['required', 'in:'.implode(',', array_diff(array_keys(MovimientoInventario::TIPOS), MovimientoInventario::TIPOS_AUTOMATICOS))],
             'producto_terminado_id' => ['nullable', 'exists:producto_terminados,id'],
             'materia_prima_id' => ['nullable', 'exists:materias_primas,id'],
             'cantidad' => ['required', 'numeric', 'gt:0'],

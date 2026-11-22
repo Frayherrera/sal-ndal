@@ -51,6 +51,7 @@ class MovimientoInventarioService
                 'user_id' => $data['user_id'] ?? auth()->id(),
                 'conteo_fisico_id' => $data['conteo_fisico_id'] ?? null,
                 'venta_id' => $data['venta_id'] ?? null,
+                'viaje_camion_id' => $data['viaje_camion_id'] ?? null,
                 'fecha' => $data['fecha'] ?? now(),
             ]);
 
@@ -70,6 +71,7 @@ class MovimientoInventarioService
             'producto_producido',
             'devolucion',
             'ajuste_positivo',
+            'descargue_camion',
         ], true) ? 'entrada' : 'salida';
     }
 
@@ -379,6 +381,7 @@ class MovimientoInventarioService
                 'user_id' => auth()->id(),
                 'movimiento_original_id' => $movimiento->id,
                 'venta_id' => $movimiento->venta_id,
+                'viaje_camion_id' => $movimiento->viaje_camion_id,
                 'fecha' => now(),
             ]);
         });

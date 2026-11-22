@@ -23,7 +23,12 @@ class MovimientoInventario extends Model
         'ajuste_positivo' => 'Ajuste positivo',
         'ajuste_negativo' => 'Ajuste negativo',
         'anulacion_reversion' => 'Anulación / Reversión',
+        'cargue_camion' => 'Cargue al camión',
+        'descargue_camion' => 'Descargue del camión',
     ];
+
+    /** Tipos que solo genera el sistema (no se registran a mano en Movimientos). */
+    public const TIPOS_AUTOMATICOS = ['cargue_camion', 'descargue_camion'];
 
     protected $fillable = [
         'tipo',
@@ -41,6 +46,7 @@ class MovimientoInventario extends Model
         'movimiento_original_id',
         'conteo_fisico_id',
         'venta_id',
+        'viaje_camion_id',
         'fecha',
     ];
 

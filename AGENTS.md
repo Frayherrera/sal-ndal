@@ -187,6 +187,32 @@ Bot para **consultar** y **registrar** desde Telegram. Recibe los mensajes por *
 - `ModeloIA` es la interfaz (enlazada a `GeminiModeloIA` en `AppServiceProvider`); los tests usan un modelo simulado y `phpunit.xml` fuerza `GEMINI_API_KEY` vacía para no llamar nunca a la API real.
 - El webhook deduplica por `update_id` (caché 1 h) porque Telegram reintenta si la respuesta tarda.
 
+## Módulo Camión (cargue y descargue)
+
+Un solo camión hace **un viaje por semana** a una **ruta fija** (las rutas rotan en orden). El módulo registra qué sale y qué regresa para saber **qué se vende por semana por producto**, ya que las ventas se registran por valor total y no por producto.
+
+**Tablas (migraciones `2026_11_22_*`):**
+- `rutas` — `nombre` (único), `orden` (posición en la rotación), `ciudades` (JSON, coinciden con `clientes.ciudad`), `descripcion`, `activo`.
+- `viajes_camion` — `numero` (`VJE-00001`), `ruta_id`, `fecha_salida`, `fecha_regreso`, `estado` (`en_ruta` | `cerrado` | `anulado`), `observaciones`, `user_id`, cierre (`cerrado_at`, `cerrado_por`) y anulación (`anulado_at`, `motivo_anulacion`).
+- `detalle_viaje_camion` — por producto, todo en **unidades**: `inicial` (venía del viaje anterior), `surtido` (desde bodega), `bajado` (a bodega), `cargado` (= inicial + surtido − bajado), `regresado`, `danado`, `regalado`, `vendido` (= cargado − regresado − dañado − regalado), `precio_unidad` (snapshot al cargar). Único `(viaje, producto)`.
+- `movimientos_inventario.viaje_camion_id` — traza los movimientos del viaje.
+
+**Reglas de negocio (`ViajeCamionService`):**
+- El camión es una **segunda ubicación** del producto terminado. Surtir genera `cargue_camion` (salida de bodega) y bajar genera `descargue_camion` (entrada a bodega), con `documento` = número del viaje. El **cierre no mueve bodega**: lo vendido, dañado y regalado ya había salido al surtir.
+- Solo un viaje `en_ruta` a la vez. El stock del camión es el `cargado` del viaje en ruta o, si está en casa, el `regresado` del último viaje cerrado; ese es el `inicial` del siguiente cargue.
+- `rutaSugerida()`: la ruta activa que sigue en `orden` después del último viaje no anulado; después de la última vuelve a la primera.
+- `promedioVendido()`: promedio de los últimos 3 viajes cerrados de la ruta; el formulario de cargue lo usa para sugerir el surtido.
+- Validaciones: no se baja más de lo que hay en el camión, el camión no sale vacío, el surtido respeta el stock de bodega (lo valida `MovimientoInventarioService`) y al cerrar lo anotado no puede superar lo que salió.
+- `anular()`: solo viajes en ruta; revierte el surtido y lo bajado con `anulacion_reversion`.
+- `resultado()`: vendido a precio de catálogo frente a las ventas confirmadas entre la salida y el regreso a clientes de las ciudades de la ruta (todas las ventas si la ruta no tiene ciudades), menos los gastos de la categoría «Ruta» en esas fechas.
+- Los tipos `cargue_camion` y `descargue_camion` están en `MovimientoInventario::TIPOS_AUTOMATICOS`: no aparecen ni se aceptan en el formulario manual de Movimientos.
+
+**Captura en paquetes:** los formularios piden **paquetes + unidades sueltas**; `App\Support\Paquetes` convierte (`aUnidades`, `separar`) y formatea (`texto(245)` → «12 p + 5 u»).
+
+**Rutas (`/camion`):** `index`, `cargar` (GET) + `store`, `reportes/semanal`, `rutas` (resource sin `show`), `{viaje}`, `{viaje}/cerrar` (GET/POST), `{viaje}/anular` (POST). Rutas estáticas antes de `{viaje}`, que usa `whereNumber`.
+
+**Vistas:** `resources/views/camion/{index,create,cerrar,show,rutas/{index,create,edit,_form},reportes/semanal}.blade.php`. El reporte semanal es una matriz producto × viaje cerrado con totales en paquetes y pesos, y la merma por viaje. Menú: «Camión» (`fa-truck`).
+
 ## Known Issues
 
 1. ~~**Dual JS loading:** cargaban JS vía `@vite()` y `asset('js/app.js')` — el service worker se registraba dos veces.~~ Corregido: se usa solo `@vite(['resources/js/app.js'])`.
@@ -222,6 +248,8 @@ Bot para **consultar** y **registrar** desde Telegram. Recibe los mensajes por *
   - `tests/Feature/GastoFeatureTest.php` — listado, filtros, CRUD, costo obligatorio en compras, CSV, reportes, dashboard y categorías
   - `tests/Feature/TelegramBotTest.php` — bot de Telegram: secreto del webhook, chats autorizados, consultas, registros con confirmación, reparto de abonos, montos y comando `telegram:webhook`
   - `tests/Feature/TelegramAsistenteIATest.php` — asistente con IA (modelo simulado): consultas, registros con confirmación, errores, memoria, límite gratuito, deduplicación y cliente de Gemini
+  - `tests/Unit/ViajeCamionServiceTest.php` — camión: paquetes ↔ unidades, cargue descuenta bodega, cierre calcula vendido, rotación de rutas, bajar a bodega, validaciones, anulación, promedio y resultado del viaje
+  - `tests/Feature/CamionFeatureTest.php` — camión vía pantallas: rutas, flujo semanal completo, errores, anulación y tipos ocultos en Movimientos
   - `tests/Feature/ViewsSmokeTest.php` — smoke test de render de todas las vistas (incluyendo recetas, producción, clientes, ventas y gastos)
 
 **Importante:** El caché de rutas/config (`bootstrap/cache/routes-v7.php`, `config.php`) se regenera apuntando a MySQL RDS y predata a los cambios. Antes de correr tests/artisan localmente conviene limpiarlo (`php artisan config:clear` + `php artisan route:clear`) — el script `composer test` ya hace `config:clear`.

@@ -15,9 +15,12 @@ use App\Http\Controllers\ProduccionController;
 use App\Http\Controllers\ProductoTerminadoController;
 use App\Http\Controllers\RecetaController;
 use App\Http\Controllers\ReporteGastoController;
+use App\Http\Controllers\ReporteCamionController;
 use App\Http\Controllers\ReporteVentaController;
+use App\Http\Controllers\RutaController;
 use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\ViajeCamionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -153,5 +156,22 @@ Route::middleware('auth')->group(function () {
         Route::put('{gasto}', [GastoController::class, 'update'])->whereNumber('gasto')->name('update');
         Route::get('{gasto}/anular', [GastoController::class, 'anularView'])->whereNumber('gasto')->name('anular');
         Route::post('{gasto}/anular', [GastoController::class, 'anular'])->whereNumber('gasto')->name('anular.store');
+    });
+
+    // Camión: rutas, cargue / cierre de viajes y reporte semanal
+    Route::prefix('camion')->name('camion.')->group(function () {
+        Route::get('/', [ViajeCamionController::class, 'index'])->name('index');
+        Route::get('cargar', [ViajeCamionController::class, 'create'])->name('create');
+        Route::post('/', [ViajeCamionController::class, 'store'])->name('store');
+        Route::get('reportes/semanal', [ReporteCamionController::class, 'semanal'])->name('reportes.semanal');
+
+        Route::resource('rutas', RutaController::class)
+            ->parameters(['rutas' => 'ruta'])
+            ->except('show');
+
+        Route::get('{viaje}', [ViajeCamionController::class, 'show'])->whereNumber('viaje')->name('show');
+        Route::get('{viaje}/cerrar', [ViajeCamionController::class, 'cerrarView'])->whereNumber('viaje')->name('cerrar');
+        Route::post('{viaje}/cerrar', [ViajeCamionController::class, 'cerrar'])->whereNumber('viaje')->name('cerrar.store');
+        Route::post('{viaje}/anular', [ViajeCamionController::class, 'anular'])->whereNumber('viaje')->name('anular');
     });
 });
