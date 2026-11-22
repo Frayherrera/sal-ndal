@@ -180,6 +180,13 @@ Bot para **consultar** y **registrar** desde Telegram. Recibe los mensajes por *
 
 **Flujo de los registros:** `preparar*()` interpreta el texto y **no guarda nada**; el bot muestra el resumen con botones ✅/❌ y guarda la acción en caché 15 minutos (`telegram:confirmacion:{token}`, `CACHE_STORE=database`). Al confirmar, `ejecutar()` guarda con los servicios de la app, que **revalidan** (el saldo pudo cambiar). El botón solo sirve una vez y solo desde el mismo chat. El webhook responde siempre 200 a Telegram (si no, reintenta el update) y registra los errores en el log.
 
+**Asistente con IA (Gemini, `app/Services/Telegram/IA/`):** los mensajes **sin `/`** van a `AsistenteTelegram`; los comandos con `/` no pasan por la IA.
+- Configuración: `GEMINI_API_KEY` (capa gratuita de Google AI Studio) y `GEMINI_MODELOS` (lista en orden; por defecto `gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-3.5-flash`). Sin key, el texto libre responde con la sugerencia de `/ayuda`.
+- `GeminiModeloIA` llama a `generateContent` con function calling (key en la cabecera `x-goog-api-key`, nunca en la URL). Si un modelo responde 503/404/500 prueba el siguiente; un 429 lanza `LimiteIAException` y el bot avisa que se acabó el cupo gratuito. Devuelve el turno del modelo sin cambios para reenviarlo (conserva las firmas de razonamiento; los `args` vacíos se reenvían como `{}`).
+- `AsistenteTelegram` declara funciones que llaman a `TelegramConsultas` y a `TelegramRegistros::preparar*Datos()`. Las funciones `preparar_*` **solo preparan**: el bot muestra el resumen con ✅/❌ (mismo flujo de confirmación) y nada se guarda sin confirmar. Los errores de validación vuelven al modelo como `error` para que los explique. Recuerda los últimos 6 intercambios por chat (caché 60 min) como texto de contexto. Máximo 6 vueltas por mensaje.
+- `ModeloIA` es la interfaz (enlazada a `GeminiModeloIA` en `AppServiceProvider`); los tests usan un modelo simulado y `phpunit.xml` fuerza `GEMINI_API_KEY` vacía para no llamar nunca a la API real.
+- El webhook deduplica por `update_id` (caché 1 h) porque Telegram reintenta si la respuesta tarda.
+
 ## Known Issues
 
 1. ~~**Dual JS loading:** cargaban JS vía `@vite()` y `asset('js/app.js')` — el service worker se registraba dos veces.~~ Corregido: se usa solo `@vite(['resources/js/app.js'])`.
@@ -214,6 +221,7 @@ Bot para **consultar** y **registrar** desde Telegram. Recibe los mensajes por *
   - `tests/Unit/GastoServiceTest.php` — gastos manuales, gasto automático de compras, anulación en cascada, protección de categorías
   - `tests/Feature/GastoFeatureTest.php` — listado, filtros, CRUD, costo obligatorio en compras, CSV, reportes, dashboard y categorías
   - `tests/Feature/TelegramBotTest.php` — bot de Telegram: secreto del webhook, chats autorizados, consultas, registros con confirmación, reparto de abonos, montos y comando `telegram:webhook`
+  - `tests/Feature/TelegramAsistenteIATest.php` — asistente con IA (modelo simulado): consultas, registros con confirmación, errores, memoria, límite gratuito, deduplicación y cliente de Gemini
   - `tests/Feature/ViewsSmokeTest.php` — smoke test de render de todas las vistas (incluyendo recetas, producción, clientes, ventas y gastos)
 
 **Importante:** El caché de rutas/config (`bootstrap/cache/routes-v7.php`, `config.php`) se regenera apuntando a MySQL RDS y predata a los cambios. Antes de correr tests/artisan localmente conviene limpiarlo (`php artisan config:clear` + `php artisan route:clear`) — el script `composer test` ya hace `config:clear`.

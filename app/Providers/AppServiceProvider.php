@@ -11,7 +11,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Modelo de IA del asistente del bot de Telegram (gratis con la capa gratuita de Gemini)
+        $this->app->bind(\App\Services\Telegram\IA\ModeloIA::class, \App\Services\Telegram\IA\GeminiModeloIA::class);
     }
 
     /**

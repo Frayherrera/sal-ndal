@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\Telegram\TelegramBot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -23,6 +24,13 @@ class TelegramWebhookController extends Controller
 
         if ($secreto === '' || ! hash_equals($secreto, (string) $request->header('X-Telegram-Bot-Api-Secret-Token'))) {
             return response()->json(['ok' => false], 403);
+        }
+
+        // Telegram reintenta un update si no recibe respuesta a tiempo: cada update se procesa una sola vez
+        $updateId = $request->input('update_id');
+
+        if ($updateId !== null && ! Cache::add('telegram:update:'.$updateId, true, now()->addHour())) {
+            return response()->json(['ok' => true]);
         }
 
         try {

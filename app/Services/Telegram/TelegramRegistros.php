@@ -44,11 +44,27 @@ class TelegramRegistros
         [$principal, $categoriaTexto] = $this->separar($texto);
         [$monto, $descripcion] = $this->extraerMonto($principal, 'el valor del gasto');
 
+        return $this->prepararGastoDatos($monto, $descripcion, $categoriaTexto);
+    }
+
+    /**
+     * Igual que prepararGasto() pero con los datos ya separados (lo usa el asistente con IA).
+     *
+     * @return array{resumen: string, accion: array<string, mixed>}
+     */
+    public function prepararGastoDatos(float $monto, string $descripcion, ?string $categoriaTexto = null): array
+    {
+        $descripcion = trim($descripcion);
+
+        if ($monto <= 0) {
+            throw new RuntimeException('El valor del gasto debe ser mayor a cero.');
+        }
+
         if ($descripcion === '') {
             throw new RuntimeException('Falta la descripción. Ej: <code>/gasto 70000 comida | Ruta</code>');
         }
 
-        $categoria = $this->buscador->categoria($categoriaTexto !== '' ? $categoriaTexto : 'Otros');
+        $categoria = $this->buscador->categoria(filled($categoriaTexto) ? $categoriaTexto : 'Otros');
         $descripcion = mb_strtoupper(mb_substr($descripcion, 0, 1)).mb_substr($descripcion, 1);
 
         return [
@@ -87,6 +103,23 @@ class TelegramRegistros
         }
 
         [$monto, $clienteTexto] = $this->extraerMontoFinal($palabras, 'el valor de la venta');
+
+        return $this->prepararVentaDatos($clienteTexto, $monto, $forma, $nota);
+    }
+
+    /**
+     * Igual que prepararVenta() pero con los datos ya separados (lo usa el asistente con IA).
+     *
+     * @return array{resumen: string, accion: array<string, mixed>}
+     */
+    public function prepararVentaDatos(string $clienteTexto, float $monto, string $forma = Venta::FORMA_CONTADO, ?string $nota = null): array
+    {
+        if ($monto <= 0) {
+            throw new RuntimeException('El valor de la venta debe ser mayor a cero.');
+        }
+
+        $forma = self::FORMAS[F::normalizar($forma)] ?? throw new RuntimeException('La forma de pago debe ser contado o crédito.');
+        $nota = trim((string) $nota);
         $cliente = $this->buscador->cliente($clienteTexto);
         $credito = $forma === Venta::FORMA_CREDITO;
 
@@ -129,6 +162,27 @@ class TelegramRegistros
         }
 
         [$monto, $clienteTexto] = $this->extraerMontoFinal($palabras, 'el valor del abono');
+
+        return $this->prepararAbonoDatos($clienteTexto, $monto, $metodo);
+    }
+
+    /**
+     * Igual que prepararAbono() pero con los datos ya separados (lo usa el asistente con IA).
+     *
+     * @return array{resumen: string, accion: array<string, mixed>}
+     */
+    public function prepararAbonoDatos(string $clienteTexto, float $monto, string $metodo = 'efectivo'): array
+    {
+        if ($monto <= 0) {
+            throw new RuntimeException('El valor del abono debe ser mayor a cero.');
+        }
+
+        $metodo = F::normalizar($metodo) ?: 'efectivo';
+
+        if (! array_key_exists($metodo, PagoVenta::METODOS)) {
+            throw new RuntimeException('Método de pago no válido. Usa: '.implode(', ', array_keys(PagoVenta::METODOS)).'.');
+        }
+
         $cliente = $this->buscador->cliente($clienteTexto);
         $reparto = $this->repartirAbono($cliente, $monto);
 

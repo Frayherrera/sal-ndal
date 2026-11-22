@@ -53,4 +53,16 @@ return [
         'user_email' => env('TELEGRAM_USER_EMAIL', env('ADMIN_EMAIL', 'admin@admin.co')),
     ],
 
+    /*
+    | Gemini (Google) para el asistente con IA del bot. Sin key, el bot funciona solo con comandos.
+    */
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        // Se prueban en orden: si uno está saturado (503) o retirado (404), se usa el siguiente
+        'modelos' => array_values(array_filter(array_map('trim', explode(',', (string) env(
+            'GEMINI_MODELOS',
+            'gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-3.5-flash'
+        ))))),
+    ],
+
 ];

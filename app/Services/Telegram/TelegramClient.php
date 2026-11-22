@@ -50,6 +50,16 @@ class TelegramClient
         ] + $extra);
     }
 
+    /** Muestra "escribiendo…" en el chat mientras se prepara la respuesta. */
+    public function escribiendo(int|string $chatId): void
+    {
+        try {
+            $this->llamar('sendChatAction', ['chat_id' => $chatId, 'action' => 'typing']);
+        } catch (RuntimeException) {
+            // Es solo cosmético: si falla, se sigue igual
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */

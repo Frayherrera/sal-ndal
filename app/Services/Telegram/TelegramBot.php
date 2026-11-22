@@ -2,6 +2,8 @@
 
 namespace App\Services\Telegram;
 
+use App\Services\Telegram\IA\AsistenteTelegram;
+use App\Services\Telegram\IA\LimiteIAException;
 use App\Services\Telegram\TelegramFormato as F;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -36,7 +38,33 @@ class TelegramBot
         private TelegramClient $telegram,
         private TelegramConsultas $consultas,
         private TelegramRegistros $registros,
+        private AsistenteTelegram $asistente,
     ) {}
+
+    /**
+     * Mensajes sin "/" van al asistente con IA (si hay GEMINI_API_KEY).
+     * Devuelve el texto a enviar (ya escapado para HTML).
+     */
+    private function responderConIA(int|string $chatId, string $texto): string
+    {
+        if (! $this->asistente->disponible()) {
+            return 'No entendí el mensaje. Escribe /ayuda para ver los comandos.';
+        }
+
+        $this->telegram->escribiendo($chatId);
+
+        try {
+            $respuesta = $this->asistente->responder(
+                $chatId,
+                $texto,
+                fn (array $preparado) => $this->pedirConfirmacion($chatId, $preparado),
+            );
+        } catch (LimiteIAException) {
+            return '⏳ El asistente alcanzó su límite gratuito por ahora. Mientras tanto usa los comandos: /ayuda';
+        }
+
+        return F::e($respuesta);
+    }
 
     /**
      * @param  array<string, mixed>  $update
@@ -93,7 +121,7 @@ class TelegramBot
                 'gasto' => $this->pedirConfirmacion($chatId, $this->registros->prepararGasto($argumentos)),
                 'venta' => $this->pedirConfirmacion($chatId, $this->registros->prepararVenta($argumentos)),
                 'abono' => $this->pedirConfirmacion($chatId, $this->registros->prepararAbono($argumentos)),
-                null => "No entendí el mensaje. Escribe /ayuda para ver los comandos.",
+                null => $this->responderConIA($chatId, $texto),
                 default => 'Comando desconocido: /'.F::e($comando).'. Escribe /ayuda para ver los comandos.',
             };
         } catch (RuntimeException $e) {
