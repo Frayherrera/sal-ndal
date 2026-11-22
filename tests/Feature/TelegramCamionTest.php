@@ -165,6 +165,68 @@ class TelegramCamionTest extends TestCase
     }
 
     #[Test]
+    public function crear_una_ruta_pide_confirmacion_y_va_al_final_de_la_rotacion(): void
+    {
+        \App\Models\Cliente::factory()->create(['ciudad' => 'GAMARRA']);
+        Ruta::factory()->create(['nombre' => 'aguachica - gamarra', 'orden' => 1]);
+
+        $this->enviarTexto('/ruta Gamarra | gamarra, Aguachica');
+
+        $conBotones = collect(Http::recorded())->map(fn ($par) => $par[0])
+            ->first(fn (Request $r) => isset($r['reply_markup']));
+        $this->assertNotNull($conBotones);
+        $this->assertStringContainsString('Nombre: <b>Gamarra</b>', $conBotones['text']);
+        $this->assertStringContainsString('Orden en la rotación: 2', $conBotones['text']);
+        $this->assertStringContainsString('GAMARRA, AGUACHICA', $conBotones['text']); // usa la escritura de los clientes
+        $this->assertDatabaseCount('rutas', 1); // todavía no se guarda
+
+        $this->postJson('/telegram/webhook', [
+            'update_id' => $this->updateId++,
+            'callback_query' => [
+                'id' => 'cb1',
+                'message' => ['message_id' => 99, 'chat' => ['id' => self::CHAT]],
+                'data' => $conBotones['reply_markup']['inline_keyboard'][0][0]['callback_data'],
+            ],
+        ], ['X-Telegram-Bot-Api-Secret-Token' => 'secreto-webhook'])->assertOk();
+
+        $ruta = Ruta::where('nombre', 'Gamarra')->firstOrFail();
+        $this->assertSame(2, $ruta->orden);
+        $this->assertSame(['GAMARRA', 'AGUACHICA'], $ruta->ciudades);
+        $this->assertTrue($ruta->activo);
+
+        // Nombres repetidos se rechazan (sin distinguir mayúsculas ni tildes)
+        $this->enviarTexto('/ruta GAMARRÁ');
+        $this->assertStringContainsString('Ya existe la ruta', $this->ultimaRespuesta());
+
+        $this->enviarTexto('/ruta');
+        $this->assertStringContainsString('Indica el nombre de la ruta', $this->ultimaRespuesta());
+
+        // Listado en orden de rotación
+        $this->enviarTexto('/rutas');
+        $texto = $this->ultimaRespuesta();
+        $this->assertStringContainsString('1. <b>aguachica - gamarra</b>', $texto);
+        $this->assertStringContainsString('2. <b>Gamarra</b> · GAMARRA, AGUACHICA', $texto);
+    }
+
+    #[Test]
+    public function el_asistente_con_ia_puede_preparar_una_ruta(): void
+    {
+        $modelo = new ModeloCamionSimulado([
+            ['preparar_ruta', ['nombre' => 'Gamarra']],
+            'Listo, revisa el resumen y confirma la ruta Gamarra.',
+        ]);
+        $this->app->instance(ModeloIA::class, $modelo);
+
+        $this->enviarTexto('crea una nueva ruta que se llame Gamarra');
+
+        $this->assertContains('preparar_ruta', $modelo->funcionesOfrecidas);
+        $this->assertContains('listar_rutas', $modelo->funcionesOfrecidas);
+        $this->assertStringContainsString('TODAVÍA NO ESTÁ GUARDADO', $modelo->resultados[0]['resultado']);
+        $this->assertDatabaseCount('rutas', 0);
+        $this->assertSame('Listo, revisa el resumen y confirma la ruta Gamarra.', $this->ultimaRespuesta());
+    }
+
+    #[Test]
     public function la_ayuda_y_el_menu_incluyen_el_camion(): void
     {
         $this->enviarTexto('/ayuda');

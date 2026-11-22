@@ -108,6 +108,12 @@ class AsistenteTelegram
                 'estado_camion' => $this->camion->estado(),
                 'vendido_viaje' => $this->camion->vendido($texto('viaje')),
                 'vendido_por_semana' => $this->camion->semanas($texto('producto'), (int) ($args['cantidad'] ?? 6)),
+                'listar_rutas' => $this->camion->rutas(),
+                'preparar_ruta' => $this->confirmar($pedirConfirmacion, $this->registros->prepararRutaDatos(
+                    $texto('nombre'),
+                    $texto('ciudades') ?: null,
+                    isset($args['orden']) ? (int) $args['orden'] : null,
+                )),
                 'preparar_gasto' => $this->confirmar($pedirConfirmacion, $this->registros->prepararGastoDatos(
                     $numero('valor'), $texto('descripcion'), $texto('categoria') ?: null
                 )),
@@ -152,7 +158,7 @@ class AsistenteTelegram
             '',
             'Reglas:',
             '- Para cualquier dato del negocio usa las funciones. Nunca inventes cifras, clientes ni saldos.',
-            '- Para registrar un gasto, una venta o un abono usa las funciones preparar_*. Esas funciones NO guardan:',
+            '- Para registrar un gasto, una venta, un abono o crear una ruta del camión usa las funciones preparar_*. Esas funciones NO guardan:',
             '  le muestran al usuario un resumen con botones y se guarda solo si él pulsa Confirmar.',
             '  Después de prepararlo, dile en una frase que revise el resumen y lo confirme. Nunca digas que ya quedó guardado.',
             '- Convierte cantidades escritas en palabras a números: "70 mil" = 70000, "1,5 millones" = 1500000. Si un valor parece incompleto o ambiguo (ej. "230"), pregunta antes de preparar el registro.',
@@ -194,6 +200,13 @@ class AsistenteTelegram
                     'producto' => $texto('Parte del nombre de un producto, ej. "comino" (opcional).'),
                     'cantidad' => ['type' => 'INTEGER', 'description' => 'Cuántos viajes recientes (1 a 12, por defecto 6).'],
                 ]]],
+            ['name' => 'listar_rutas', 'description' => 'Rutas fijas del camión en el orden en que se rotan cada semana, con sus ciudades y cuántos viajes tienen.'],
+            ['name' => 'preparar_ruta', 'description' => 'Prepara la creación de una ruta nueva del camión y le pide confirmación al usuario. No guarda. Por defecto va al final de la rotación.',
+                'parameters' => ['type' => 'OBJECT', 'properties' => [
+                    'nombre' => $texto('Nombre de la ruta, ej. "Gamarra".'),
+                    'ciudades' => $texto('Ciudades que visita, separadas por coma, ej. "Gamarra, Aguachica" (opcional).'),
+                    'orden' => ['type' => 'INTEGER', 'description' => 'Posición en la rotación (opcional; por defecto al final).'],
+                ], 'required' => ['nombre']]],
             ['name' => 'preparar_gasto', 'description' => 'Prepara el registro de un gasto y le pide confirmación al usuario. No guarda.',
                 'parameters' => ['type' => 'OBJECT', 'properties' => [
                     'valor' => $valor,

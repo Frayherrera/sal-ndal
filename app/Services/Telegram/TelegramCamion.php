@@ -4,6 +4,7 @@ namespace App\Services\Telegram;
 
 use App\Models\DetalleViajeCamion;
 use App\Models\ProductoTerminado;
+use App\Models\Ruta;
 use App\Models\ViajeCamion;
 use App\Services\Telegram\TelegramFormato as F;
 use App\Services\ViajeCamionService;
@@ -173,6 +174,29 @@ class TelegramCamion
         if ($productos->count() > 8) {
             $lineas[] = '';
             $lineas[] = 'Hay más productos con ese nombre; escribe uno más específico.';
+        }
+
+        return implode("\n", $lineas);
+    }
+
+    /** /rutas — las rutas del camión en el orden de la rotación. */
+    public function rutas(): string
+    {
+        $rutas = Ruta::withCount('viajes')->orderBy('orden')->orderBy('nombre')->get();
+
+        if ($rutas->isEmpty()) {
+            return "Todavía no hay rutas.\nCrea una: <code>/ruta Gamarra | Gamarra, Aguachica</code>";
+        }
+
+        $sugerida = $this->camion->rutaSugerida();
+        $lineas = ['<b>🛣️ Rutas del camión</b> (en orden de rotación)', ''];
+
+        foreach ($rutas as $r) {
+            $lineas[] = "{$r->orden}. <b>".F::e($r->nombre).'</b>'
+                .($r->ciudades ? ' · '.F::e(implode(', ', $r->ciudades)) : '')
+                ." · {$r->viajes_count} viajes"
+                .($r->activo ? '' : ' · <i>inactiva</i>')
+                .($sugerida?->id === $r->id && ! $this->camion->viajeEnRuta() ? ' ← sigue' : '');
         }
 
         return implode("\n", $lineas);

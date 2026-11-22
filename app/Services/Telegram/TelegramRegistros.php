@@ -4,6 +4,7 @@ namespace App\Services\Telegram;
 
 use App\Models\Cliente;
 use App\Models\PagoVenta;
+use App\Models\Ruta;
 use App\Models\User;
 use App\Models\Venta;
 use App\Services\GastoService;
@@ -224,8 +225,115 @@ class TelegramRegistros
             'gasto' => $this->ejecutarGasto($accion, $usuario, $hoy),
             'venta' => $this->ejecutarVenta($accion, $usuario, $hoy),
             'abono' => $this->ejecutarAbono($accion, $usuario),
+            'ruta' => $this->ejecutarRuta($accion),
             default => throw new RuntimeException('Acción desconocida.'),
         };
+    }
+
+    /**
+     * /ruta <nombre> [| ciudad, ciudad…]
+     *
+     * @return array{resumen: string, accion: array<string, mixed>}
+     */
+    public function prepararRuta(string $texto): array
+    {
+        [$nombre, $ciudades] = $this->separar($texto);
+
+        return $this->prepararRutaDatos($nombre, $ciudades);
+    }
+
+    /**
+     * Prepara una ruta nueva del camión. Va al final de la rotación salvo que se indique el orden.
+     * Las ciudades se emparejan con las ciudades de los clientes (sin distinguir mayúsculas ni tildes).
+     *
+     * @param  array<int, string>|string|null  $ciudades  lista o texto separado por comas
+     * @return array{resumen: string, accion: array<string, mixed>}
+     */
+    public function prepararRutaDatos(string $nombre, array|string|null $ciudades = null, ?int $orden = null): array
+    {
+        $nombre = trim($nombre);
+
+        if ($nombre === '') {
+            throw new RuntimeException('Indica el nombre de la ruta. Ej: <code>/ruta Gamarra | Gamarra, Aguachica</code>');
+        }
+
+        if (mb_strlen($nombre) > 80) {
+            throw new RuntimeException('El nombre de la ruta no puede superar los 80 caracteres.');
+        }
+
+        $this->validarRutaNueva($nombre);
+
+        if ($orden !== null && ($orden < 1 || $orden > 999)) {
+            throw new RuntimeException('El orden de la ruta debe estar entre 1 y 999.');
+        }
+
+        $orden ??= (int) Ruta::max('orden') + 1;
+        $ciudades = $this->ciudadesDeRuta($ciudades);
+
+        return [
+            'resumen' => implode("\n", [
+                '<b>🛣️ Crear ruta del camión</b>',
+                'Nombre: <b>'.F::e($nombre).'</b>',
+                "Orden en la rotación: {$orden}",
+                'Ciudades: '.($ciudades !== [] ? F::e(implode(', ', $ciudades)) : '<i>ninguna</i> (puedes agregarlas después en la app)'),
+            ]),
+            'accion' => [
+                'tipo' => 'ruta',
+                'nombre' => $nombre,
+                'orden' => $orden,
+                'ciudades' => $ciudades,
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $accion
+     */
+    private function ejecutarRuta(array $accion): string
+    {
+        // Se revalida: pudieron crear una ruta con el mismo nombre mientras tanto
+        $this->validarRutaNueva($accion['nombre']);
+
+        $ruta = Ruta::create([
+            'nombre' => $accion['nombre'],
+            'orden' => $accion['orden'],
+            'ciudades' => $accion['ciudades'],
+            'activo' => true,
+        ]);
+
+        return '✅ Ruta <b>'.F::e($ruta->nombre)."</b> creada (posición {$ruta->orden} en la rotación)."
+            .($ruta->ciudades ? "\nCiudades: ".F::e(implode(', ', $ruta->ciudades)) : '');
+    }
+
+    private function validarRutaNueva(string $nombre): void
+    {
+        $existe = Ruta::all()->first(fn (Ruta $r) => F::normalizar($r->nombre) === F::normalizar($nombre));
+
+        if ($existe) {
+            throw new RuntimeException('Ya existe la ruta «'.F::e($existe->nombre).'».');
+        }
+    }
+
+    /**
+     * Normaliza la lista de ciudades usando la escritura con que están en los clientes.
+     *
+     * @param  array<int, string>|string|null  $ciudades
+     * @return array<int, string>
+     */
+    private function ciudadesDeRuta(array|string|null $ciudades): array
+    {
+        $lista = is_array($ciudades) ? $ciudades : explode(',', (string) $ciudades);
+
+        $conocidas = Cliente::whereNotNull('ciudad')->where('ciudad', '!=', '')->distinct()->pluck('ciudad')
+            ->keyBy(fn ($c) => F::normalizar($c));
+
+        return collect($lista)
+            ->map(fn ($c) => trim((string) $c))
+            ->filter()
+            ->map(fn ($c) => $conocidas[F::normalizar($c)] ?? mb_strtoupper($c))
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
