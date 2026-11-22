@@ -3,6 +3,7 @@
 namespace App\Services\Telegram\IA;
 
 use App\Models\PagoVenta;
+use App\Services\Telegram\TelegramCamion;
 use App\Services\Telegram\TelegramConsultas;
 use App\Services\Telegram\TelegramRegistros;
 use Illuminate\Support\Facades\Cache;
@@ -29,6 +30,7 @@ class AsistenteTelegram
         private ModeloIA $modelo,
         private TelegramConsultas $consultas,
         private TelegramRegistros $registros,
+        private TelegramCamion $camion,
     ) {}
 
     public function disponible(): bool
@@ -103,6 +105,9 @@ class AsistenteTelegram
                 'alertas_stock' => $this->consultas->alertas(),
                 'ultimas_ventas' => $this->consultas->ventas((int) ($args['cantidad'] ?? 10)),
                 'ultimos_gastos' => $this->consultas->gastos((int) ($args['cantidad'] ?? 10)),
+                'estado_camion' => $this->camion->estado(),
+                'vendido_viaje' => $this->camion->vendido($texto('viaje')),
+                'vendido_por_semana' => $this->camion->semanas($texto('producto'), (int) ($args['cantidad'] ?? 6)),
                 'preparar_gasto' => $this->confirmar($pedirConfirmacion, $this->registros->prepararGastoDatos(
                     $numero('valor'), $texto('descripcion'), $texto('categoria') ?: null
                 )),
@@ -153,6 +158,7 @@ class AsistenteTelegram
             '- Convierte cantidades escritas en palabras a números: "70 mil" = 70000, "1,5 millones" = 1500000. Si un valor parece incompleto o ambiguo (ej. "230"), pregunta antes de preparar el registro.',
             '- Una venta es de contado salvo que digan crédito, fiado o "me queda debiendo".',
             '- Si falta un dato obligatorio (cliente, valor, descripción) o una función devuelve error, pregunta o explica en una frase.',
+            '- El camión hace un viaje por semana a una ruta fija. Lo que se vende por producto sale de las funciones del camión, en paquetes de 20 unidades ("p") y unidades sueltas ("u"). El cargue y el regreso del camión no se registran por aquí: se hacen en la aplicación web.',
             '- Si el usuario pide algo que ninguna función hace, dilo y sugiere escribir /ayuda.',
             '- Responde en texto plano: sin Markdown, sin asteriscos ni tablas. Puedes usar saltos de línea.',
         ]);
@@ -180,6 +186,14 @@ class AsistenteTelegram
                 'parameters' => ['type' => 'OBJECT', 'properties' => ['cantidad' => $cantidad]]],
             ['name' => 'ultimos_gastos', 'description' => 'Últimos gastos registrados y total gastado en el mes.',
                 'parameters' => ['type' => 'OBJECT', 'properties' => ['cantidad' => $cantidad]]],
+            ['name' => 'estado_camion', 'description' => 'Dónde está el camión de reparto (en ruta o en casa), qué ruta hace y qué productos lleva o le quedan.'],
+            ['name' => 'vendido_viaje', 'description' => 'Lo vendido por producto en un viaje cerrado del camión (por defecto el último), con mermas, ventas registradas, gastos de ruta y resultado.',
+                'parameters' => ['type' => 'OBJECT', 'properties' => ['viaje' => $texto('Número del viaje, ej. "VJE-00003" o "3" (opcional; por defecto el último cerrado).')]]],
+            ['name' => 'vendido_por_semana', 'description' => 'Lo vendido por el camión en los últimos viajes (uno por semana). Sin producto: total por viaje. Con producto: ese producto viaje por viaje.',
+                'parameters' => ['type' => 'OBJECT', 'properties' => [
+                    'producto' => $texto('Parte del nombre de un producto, ej. "comino" (opcional).'),
+                    'cantidad' => ['type' => 'INTEGER', 'description' => 'Cuántos viajes recientes (1 a 12, por defecto 6).'],
+                ]]],
             ['name' => 'preparar_gasto', 'description' => 'Prepara el registro de un gasto y le pide confirmación al usuario. No guarda.',
                 'parameters' => ['type' => 'OBJECT', 'properties' => [
                     'valor' => $valor,

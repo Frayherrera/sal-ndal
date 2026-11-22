@@ -174,6 +174,7 @@ Bot para **consultar** y **registrar** desde Telegram. Recibe los mensajes por *
 - `TelegramClient` — llamadas a la Bot API con `Http` (en tests: `Http::fake()`). No propaga la URL en errores de conexión porque incluye el token.
 - `TelegramBot` — procesa updates: enruta comandos (acepta `/cmd@NombreBot`), autoriza el chat y maneja los botones de confirmación. `TelegramBot::COMANDOS` es el menú publicado.
 - `TelegramConsultas` — `/resumen` (usa `InventarioService::resumen()`), `/cartera [cliente]`, `/stock texto`, `/alertas`, `/ventas [n]`, `/gastos [n]`.
+- `TelegramCamion` — consultas del módulo Camión (solo lectura, usa `ViajeCamionService`): `/camion` (en ruta o en casa y qué lleva), `/vendido [viaje]` (lo vendido por producto en el último viaje cerrado o en `VJE-0000N`, con merma, ventas registradas, gastos de ruta y resultado), `/semanas [producto]` (vendido por viaje; con producto, ese producto viaje por viaje). El asistente con IA las expone como `estado_camion`, `vendido_viaje` y `vendido_por_semana`. El cargue y el regreso no se hacen por el bot.
 - `TelegramRegistros` — `/gasto valor descripción [| categoría]` (categoría por defecto «Otros»), `/venta cliente valor [contado|credito] [| nota]` (crédito: vence a 30 días, sin abono), `/abono cliente valor [método]` (se reparte entre las ventas con saldo más antiguas). Usa `GastoService`, `VentaService` y `PagoVentaService`.
 - `BuscadorTelegram` — encuentra cliente (por nombre o local) y categoría sin distinguir mayúsculas, tildes ni espacios: exacto → empieza por → contiene; si hay varios, pide precisar.
 - `TelegramFormato` — dinero, escape HTML, normalización y `monto()` (acepta 70000, 70.000, 70,000, $70.000, 70k, 1,5m).
@@ -246,6 +247,7 @@ Un solo camión hace **un viaje por semana** a una **ruta fija** (las rutas rota
   - `tests/Feature/ReporteVentaFeatureTest.php` — reporte por cliente y filtros de fecha
   - `tests/Unit/GastoServiceTest.php` — gastos manuales, gasto automático de compras, anulación en cascada, protección de categorías
   - `tests/Feature/GastoFeatureTest.php` — listado, filtros, CRUD, costo obligatorio en compras, CSV, reportes, dashboard y categorías
+  - `tests/Feature/TelegramCamionTest.php` — consultas del camión en el bot (`/camion`, `/vendido`, `/semanas`) y funciones del asistente con IA
   - `tests/Feature/TelegramBotTest.php` — bot de Telegram: secreto del webhook, chats autorizados, consultas, registros con confirmación, reparto de abonos, montos y comando `telegram:webhook`
   - `tests/Feature/TelegramAsistenteIATest.php` — asistente con IA (modelo simulado): consultas, registros con confirmación, errores, memoria, límite gratuito, deduplicación y cliente de Gemini
   - `tests/Unit/ViajeCamionServiceTest.php` — camión: paquetes ↔ unidades, cargue descuenta bodega, cierre calcula vendido, rotación de rutas, bajar a bodega, validaciones, anulación, promedio y resultado del viaje
