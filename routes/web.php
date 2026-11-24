@@ -130,6 +130,7 @@ Route::middleware('auth')->group(function () {
         Route::get('cartera', [CarteraController::class, 'index'])->name('cartera');
         Route::get('reportes/clientes', [ReporteVentaController::class, 'clientes'])->name('reportes.clientes');
         Route::get('exportar', [VentaController::class, 'export'])->name('export');
+        Route::get('exportar-pdf', [VentaController::class, 'exportPdf'])->name('export-pdf');
 
         Route::get('{venta}', [VentaController::class, 'show'])->whereNumber('venta')->name('show');
         Route::get('{venta}/recibo', [VentaController::class, 'recibo'])->whereNumber('venta')->name('recibo');

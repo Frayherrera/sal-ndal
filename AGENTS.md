@@ -124,6 +124,7 @@ Venta **por valor total** (sin productos) con contado/crédito, abonos, cartera 
 - Anulación: solo ventas `confirmada` y **sin abonos**; marca la venta como anulada (no se borra). Si es una venta antigua con movimientos de inventario, los revierte con `MovimientoInventarioService::anular()` (espejo `anulacion_reversion`).
 
 **Rutas (`/ventas`):** `index`, `crear`, `store`, `{venta}`, `{venta}/recibo` (vista imprimible), `{venta}/anular` (GET/POST), `{venta}/abonos/crear` + `{venta}/abonos`, `cartera`, `reportes/clientes`, `exportar` (CSV). Las rutas estáticas van antes de `{venta}` y éstas usan `whereNumber`. El reporte `reportes/productos` se eliminó con el cambio a valor total.
+**Reporte en PDF (`/ventas/exportar-pdf`, botón «PDF» del listado):** usa `barryvdh/laravel-dompdf` y los mismos filtros del listado (`consultaFiltrada()`). `ReporteVentasService::generar()` arma los KPIs (solo ventas confirmadas: total, cobrado, saldo, ticket promedio, contado vs. crédito, vencidas, anuladas excluidas), ventas por día (por semana si el periodo pasa de 31 días; incluye los días sin ventas), top 10 clientes con participación y saldo, y el detalle (máximo `MAX_DETALLE` = 1.000 filas). Vista `resources/views/ventas/reportes/pdf.blade.php`: documento blanco con CSS compatible con dompdf (tablas, sin flexbox ni JS), fuente DejaVu Sans, logo `public/logo.jpeg` embebido en base64, encabezado de la tabla repetido por página y pie «Página X de Y» dibujado con el canvas de dompdf. Archivo: `reporte-ventas-AAAA-MM-DD_a_AAAA-MM-DD.pdf`.
 
 **Servicios clave:** `VentaService` (crear por valor total con switch contado/crédito, anular), `PagoVentaService` (registrar abono, valida saldo y método).
 
@@ -245,6 +246,7 @@ Un solo camión hace **un viaje por semana** a una **ruta fija** (las rutas rota
   - `tests/Unit/VentaServiceTest.php` — venta por valor total, contado/crédito, abonos, anulación (incluye reversión de stock de ventas antiguas)
   - `tests/Feature/VentaFeatureTest.php` — listado, formulario, store, recibo, anulación y CSV
   - `tests/Feature/ReporteVentaFeatureTest.php` — reporte por cliente y filtros de fecha
+  - `tests/Feature/ReporteVentasPdfTest.php` — reporte de ventas en PDF: KPIs, agrupación por día/semana, top clientes, filtros y descarga del PDF
   - `tests/Unit/GastoServiceTest.php` — gastos manuales, gasto automático de compras, anulación en cascada, protección de categorías
   - `tests/Feature/GastoFeatureTest.php` — listado, filtros, CRUD, costo obligatorio en compras, CSV, reportes, dashboard y categorías
   - `tests/Feature/TelegramCamionTest.php` — consultas del camión en el bot (`/camion`, `/vendido`, `/semanas`) y funciones del asistente con IA

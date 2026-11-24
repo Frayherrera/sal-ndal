@@ -19,6 +19,12 @@
                 <i class="fas fa-file-csv"></i>
                 <span>CSV</span>
             </a>
+            <a href="{{ route('ventas.export-pdf', request()->query()) }}"
+               class="flex items-center gap-2 glass-card text-white/70 px-4 py-2.5 rounded-xl font-medium hover:text-white transition-colors"
+               title="Reporte en PDF con los filtros actuales">
+                <i class="fas fa-file-pdf"></i>
+                <span>PDF</span>
+            </a>
             <a href="{{ route('ventas.create') }}"
                class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:from-blue-600 hover:to-purple-700 transition-all shadow-lg shadow-blue-500/30">
                 <i class="fas fa-plus"></i>
