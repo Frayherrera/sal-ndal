@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\CategoriaGasto;
 use App\Models\Gasto;
 use App\Services\GastoService;
+use App\Services\ReporteGastosService;
+use App\Support\PdfReporte;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -151,6 +154,34 @@ class GastoController extends Controller
         }, 'gastos-'.now()->format('Y-m-d').'.csv', [
             'Content-Type' => 'text/csv; charset=UTF-8',
         ]);
+    }
+
+    /**
+     * Reporte de gastos en PDF con los mismos filtros del listado.
+     */
+    public function exportPdf(Request $request, ReporteGastosService $reportes): Response
+    {
+        $filtros = [];
+
+        if ($request->filled('categoria_id') && ($categoria = CategoriaGasto::find($request->categoria_id))) {
+            $filtros[] = 'Categoría: '.$categoria->nombre;
+        }
+
+        if ($request->filled('estado')) {
+            $filtros[] = 'Estado: '.(Gasto::ESTADOS[$request->estado] ?? $request->estado);
+        }
+
+        if ($request->filled('q')) {
+            $filtros[] = 'Búsqueda: «'.$request->q.'»';
+        }
+
+        return PdfReporte::descargar(
+            'gastos.reportes.pdf',
+            $reportes->generar($this->consultaFiltrada($request), $request->only('desde', 'hasta')),
+            'Reporte de gastos',
+            'reporte-gastos',
+            $filtros,
+        );
     }
 
     private function consultaFiltrada(Request $request): Builder

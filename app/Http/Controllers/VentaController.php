@@ -7,7 +7,7 @@ use App\Models\PagoVenta;
 use App\Models\Venta;
 use App\Services\ReporteVentasService;
 use App\Services\VentaService;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\PdfReporte;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -150,30 +150,13 @@ class VentaController extends Controller
      */
     public function exportPdf(Request $request, ReporteVentasService $reportes): Response
     {
-        $datos = $reportes->generar($this->consultaFiltrada($request), $request->only('desde', 'hasta'));
-
-        $pdf = Pdf::loadView('ventas.reportes.pdf', $datos + [
-            'filtros' => $this->filtrosLegibles($request),
-            'generadoPor' => $request->user()?->name,
-            'generadoEn' => now(),
-            'logo' => $this->logoBase64(),
-        ])->setPaper('letter', 'portrait');
-
-        // Pie de página: número de página y total, en todas las hojas
-        $pdf->render();
-        $canvas = $pdf->getDomPDF()->getCanvas();
-        $fuente = $pdf->getDomPDF()->getFontMetrics()->getFont('DejaVu Sans');
-        $canvas->page_text(36, $canvas->get_height() - 28, 'Santini · Reporte de ventas', $fuente, 7, [0.45, 0.5, 0.58]);
-        $canvas->page_text($canvas->get_width() - 110, $canvas->get_height() - 28, 'Página {PAGE_NUM} de {PAGE_COUNT}', $fuente, 7, [0.45, 0.5, 0.58]);
-
-        $nombre = 'reporte-ventas-'
-            .($datos['desde']?->format('Y-m-d') ?? 'sin-fecha').'_a_'
-            .($datos['hasta']?->format('Y-m-d') ?? 'sin-fecha').'.pdf';
-
-        return response($pdf->output(), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="'.$nombre.'"',
-        ]);
+        return PdfReporte::descargar(
+            'ventas.reportes.pdf',
+            $reportes->generar($this->consultaFiltrada($request), $request->only('desde', 'hasta')),
+            'Reporte de ventas',
+            'reporte-ventas',
+            $this->filtrosLegibles($request),
+        );
     }
 
     /**
@@ -198,14 +181,6 @@ class VentaController extends Controller
         }
 
         return $filtros;
-    }
-
-    /** Logo embebido en base64 (dompdf no descarga recursos remotos). */
-    private function logoBase64(): ?string
-    {
-        $ruta = public_path('logo.jpeg');
-
-        return is_file($ruta) ? 'data:image/jpeg;base64,'.base64_encode((string) file_get_contents($ruta)) : null;
     }
 
     private function consultaFiltrada(Request $request): Builder

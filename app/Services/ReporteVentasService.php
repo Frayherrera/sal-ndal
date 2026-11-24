@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\Venta;
+use App\Support\AgrupaPorPeriodo;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -13,11 +13,10 @@ use Illuminate\Support\Collection;
  */
 class ReporteVentasService
 {
+    use AgrupaPorPeriodo;
+
     /** Filas del detalle que se imprimen como máximo (dompdf se vuelve muy lento con más). */
     public const MAX_DETALLE = 1000;
-
-    /** A partir de cuántos días el gráfico agrupa por semana en lugar de por día. */
-    private const DIAS_MAX_POR_DIA = 31;
 
     private const TOP_CLIENTES = 10;
 
@@ -36,13 +35,13 @@ class ReporteVentasService
 
         $confirmadas = $ventas->where('estado', Venta::ESTADO_CONFIRMADA)->values();
 
-        [$desde, $hasta] = $this->periodo($ventas, $filtros);
+        [$desde, $hasta] = $this->periodoDe($ventas, fn (Venta $v) => $v->fecha, $filtros);
 
         return [
             'desde' => $desde,
             'hasta' => $hasta,
             'kpis' => $this->kpis($confirmadas, $ventas),
-            'por_periodo' => $this->porPeriodo($confirmadas, $desde, $hasta),
+            'por_periodo' => $this->agruparPorPeriodo($confirmadas, fn (Venta $v) => $v->fecha, fn (Venta $v) => (float) $v->total, $desde, $hasta),
             'top_clientes' => $this->topClientes($confirmadas),
             'detalle' => $ventas->take(self::MAX_DETALLE),
             'detalle_total' => $ventas->count(),
@@ -79,46 +78,6 @@ class ReporteVentasService
     }
 
     /**
-     * Ventas confirmadas agrupadas por día (o por semana si el periodo es largo),
-     * incluyendo los días sin ventas para que el gráfico muestre la continuidad.
-     *
-     * @param  Collection<int, Venta>  $confirmadas
-     * @return array{agrupacion: string, filas: array<int, array{etiqueta: string, total: float, count: int}>, maximo: float}
-     */
-    private function porPeriodo(Collection $confirmadas, ?Carbon $desde, ?Carbon $hasta): array
-    {
-        if (! $desde || ! $hasta) {
-            return ['agrupacion' => 'dia', 'filas' => [], 'maximo' => 0.0];
-        }
-
-        $porSemana = $desde->diffInDays($hasta) + 1 > self::DIAS_MAX_POR_DIA;
-        $clave = fn (Carbon $f) => $porSemana ? $f->copy()->startOfWeek()->toDateString() : $f->toDateString();
-
-        $agrupadas = $confirmadas->groupBy(fn (Venta $v) => $clave($v->fecha));
-
-        $filas = [];
-        $cursor = $porSemana ? $desde->copy()->startOfWeek() : $desde->copy()->startOfDay();
-
-        while ($cursor->lte($hasta)) {
-            $grupo = $agrupadas->get($cursor->toDateString(), collect());
-            $filas[] = [
-                'etiqueta' => $porSemana
-                    ? 'Sem. '.$cursor->format('d/m')
-                    : ucfirst($cursor->locale('es')->translatedFormat('D')).' '.$cursor->format('d/m'),
-                'total' => round((float) $grupo->sum('total'), 2),
-                'count' => $grupo->count(),
-            ];
-            $porSemana ? $cursor->addWeek() : $cursor->addDay();
-        }
-
-        return [
-            'agrupacion' => $porSemana ? 'semana' : 'dia',
-            'filas' => $filas,
-            'maximo' => (float) max(array_column($filas, 'total') ?: [0]),
-        ];
-    }
-
-    /**
      * @param  Collection<int, Venta>  $confirmadas
      * @return array<int, array{cliente: string, local: ?string, ciudad: ?string, count: int, total: float, saldo: float, participacion: float}>
      */
@@ -145,24 +104,5 @@ class ReporteVentasService
             ->take(self::TOP_CLIENTES)
             ->values()
             ->all();
-    }
-
-    /**
-     * Periodo del reporte: el de los filtros o, si no hay, el de las ventas encontradas.
-     *
-     * @param  Collection<int, Venta>  $ventas
-     * @param  array{desde?: ?string, hasta?: ?string}  $filtros
-     * @return array{0: ?Carbon, 1: ?Carbon}
-     */
-    private function periodo(Collection $ventas, array $filtros): array
-    {
-        $desde = filled($filtros['desde'] ?? null) ? Carbon::parse($filtros['desde'])->startOfDay() : $ventas->min('fecha')?->copy()->startOfDay();
-        $hasta = filled($filtros['hasta'] ?? null) ? Carbon::parse($filtros['hasta'])->startOfDay() : $ventas->max('fecha')?->copy()->startOfDay();
-
-        if ($desde && $hasta && $desde->gt($hasta)) {
-            [$desde, $hasta] = [$hasta, $desde];
-        }
-
-        return [$desde, $hasta];
     }
 }

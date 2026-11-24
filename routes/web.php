@@ -146,6 +146,7 @@ Route::middleware('auth')->group(function () {
         Route::get('crear', [GastoController::class, 'create'])->name('create');
         Route::post('/', [GastoController::class, 'store'])->name('store');
         Route::get('exportar', [GastoController::class, 'export'])->name('export');
+        Route::get('exportar-pdf', [GastoController::class, 'exportPdf'])->name('export-pdf');
         Route::get('reportes/categorias', [ReporteGastoController::class, 'categorias'])->name('reportes.categorias');
         Route::get('reportes/resultado', [ReporteGastoController::class, 'resultado'])->name('reportes.resultado');
 
