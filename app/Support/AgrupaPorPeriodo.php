@@ -14,6 +14,9 @@ trait AgrupaPorPeriodo
     /** A partir de cuántos días se agrupa por semana en lugar de por día. */
     protected int $diasMaxPorDia = 31;
 
+    /** Hasta cuántos días se muestran también los días sin movimiento (más allá ocupan demasiado). */
+    protected int $diasMaxConVacios = 14;
+
     /**
      * Periodo del reporte: el de los filtros o, si no hay, el de los registros encontrados.
      *
@@ -39,7 +42,8 @@ trait AgrupaPorPeriodo
     }
 
     /**
-     * Suma por día o por semana, incluyendo los periodos sin registros.
+     * Suma por día o por semana. Hasta 14 días incluye los días sin registros; de 15 a 31
+     * solo los días con movimiento; más de 31 agrupa por semana (con las semanas vacías).
      *
      * @param  Collection<int, mixed>  $registros
      * @param  callable(mixed): Carbon  $fecha
@@ -52,7 +56,9 @@ trait AgrupaPorPeriodo
             return ['agrupacion' => 'dia', 'filas' => [], 'maximo' => 0.0];
         }
 
-        $porSemana = $desde->diffInDays($hasta) + 1 > $this->diasMaxPorDia;
+        $dias = $desde->diffInDays($hasta) + 1;
+        $porSemana = $dias > $this->diasMaxPorDia;
+        $omitirVacios = ! $porSemana && $dias > $this->diasMaxConVacios;
         $clave = fn (Carbon $f) => $porSemana ? $f->copy()->startOfWeek()->toDateString() : $f->toDateString();
         $agrupados = $registros->groupBy(fn ($r) => $clave(Carbon::parse($fecha($r))));
 
@@ -61,6 +67,13 @@ trait AgrupaPorPeriodo
 
         while ($cursor->lte($hasta)) {
             $grupo = $agrupados->get($cursor->toDateString(), collect());
+
+            if ($omitirVacios && $grupo->isEmpty()) {
+                $cursor->addDay();
+
+                continue;
+            }
+
             $filas[] = [
                 'etiqueta' => $porSemana
                     ? 'Sem. '.$cursor->format('d/m')

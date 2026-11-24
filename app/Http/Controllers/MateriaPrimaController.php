@@ -6,8 +6,11 @@ use App\Models\InventarioMateriaPrima;
 use App\Models\MateriaPrima;
 use App\Services\MateriaPrimaService;
 use App\Services\MolidoService;
+use App\Services\ReporteInventarioService;
+use App\Support\PdfReporte;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use RuntimeException;
 
@@ -38,6 +41,19 @@ class MateriaPrimaController extends Controller
             'sort' => request('sort'),
             'dir' => request('dir'),
         ]);
+    }
+
+    /**
+     * Reporte PDF del inventario actual de materia prima.
+     */
+    public function exportPdf(ReporteInventarioService $reportes): Response
+    {
+        return PdfReporte::descargar(
+            'inventario.materia-prima.reporte-pdf',
+            $reportes->materiaPrima(),
+            'Inventario de materia prima',
+            'inventario-materia-prima',
+        );
     }
 
     public function create(): View

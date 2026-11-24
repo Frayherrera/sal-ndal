@@ -78,6 +78,7 @@
     </div>
 
     {{-- Por categoría --}}
+    <div class="bloque">
     <h2>Gastos por categoría</h2>
     @if ($por_categoria === [])
         <div class="vacio">No hay gastos en el periodo.</div>
@@ -118,6 +119,8 @@
         </table>
     @endif
 
+    </div>
+
     {{-- Por día / semana --}}
     <h2>Gastos por {{ $por_periodo['agrupacion'] === 'semana' ? 'semana' : 'día' }}</h2>
     @if ($por_periodo['filas'] === [])
@@ -141,6 +144,7 @@
     @endif
 
     {{-- Proveedores --}}
+    <div class="bloque">
     @if ($top_proveedores !== [])
         <h2>Principales proveedores</h2>
         <table class="tabla">
@@ -165,8 +169,10 @@
         </table>
     @endif
 
+    </div>
+
     {{-- Detalle --}}
-    <h2 class="salto">Detalle de gastos</h2>
+    <h2>Detalle de gastos</h2>
     @if ($detalle->isEmpty())
         <div class="vacio">No hay gastos con estos filtros.</div>
     @else

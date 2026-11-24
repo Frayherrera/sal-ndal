@@ -46,6 +46,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/inventario/alertas', [InventarioController::class, 'alertas'])->name('inventario.alertas');
 
     // Materias primas
+    // Reportes PDF del inventario actual (antes de los resource para que no los capture {id})
+    Route::get('inventario/materia-prima/reporte-pdf', [MateriaPrimaController::class, 'exportPdf'])
+        ->name('inventario.materia-prima.export-pdf');
+    Route::get('inventario/productos-terminados/reporte-pdf', [ProductoTerminadoController::class, 'exportPdf'])
+        ->name('inventario.productos-terminados.export-pdf');
+
     Route::resource('inventario/materia-prima', MateriaPrimaController::class)
         ->parameters(['materia-prima' => 'materia'])
         ->names('inventario.materia-prima');

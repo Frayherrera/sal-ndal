@@ -107,6 +107,7 @@
         @endif
 
         {{-- Top clientes --}}
+        <div class="bloque">
         <h2>Top {{ count($top_clientes) }} clientes</h2>
         @if ($top_clientes === [])
             <div class="vacio">No hay ventas en el periodo.</div>
@@ -140,8 +141,10 @@
             </table>
         @endif
 
+        </div>
+
         {{-- Detalle --}}
-        <h2 class="salto">Detalle de ventas</h2>
+        <h2>Detalle de ventas</h2>
         @if ($detalle->isEmpty())
             <div class="vacio">No hay ventas con estos filtros.</div>
         @else

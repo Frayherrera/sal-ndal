@@ -17,7 +17,7 @@
         /* Encabezado */
         .header { width: 100%; border-bottom: 3px solid #4f46e5; padding-bottom: 12px; margin-bottom: 16px; }
         .header td { vertical-align: middle; }
-        .logo { width: 58px; height: 58px; border-radius: 10px; }
+        .logo { width: 82px; height: 52px; border-radius: 8px; } /* proporción del logo: 598 × 381 */
         .marca { font-size: 20px; font-weight: bold; letter-spacing: 2px; color: #1e293b; }
         .submarca { font-size: 8.5px; color: #64748b; letter-spacing: .5px; margin-top: 2px; }
         .titulo { font-size: 15px; font-weight: bold; color: #4f46e5; margin-top: 6px; }
@@ -66,7 +66,8 @@
         .tabla tfoot td { background: #eef2ff; font-weight: bold; border-top: 2px solid #4f46e5; border-bottom: none; }
         .num { font-family: 'DejaVu Sans Mono', monospace; font-size: 8px; color: #4f46e5; }
         .badge { display: inline-block; padding: 1.5px 6px; border-radius: 8px; font-size: 7px; font-weight: bold; }
-        .rank { display: inline-block; width: 15px; height: 15px; line-height: 15px; border-radius: 8px; background: #ede9fe; color: #6d28d9; text-align: center; font-weight: bold; font-size: 7.5px; }
+        .rank { color: #6d28d9; font-weight: bold; font-size: 8.5px; }
+        .bloque { page-break-inside: avoid; }
         .part-pista { background: #f1f5f9; height: 5px; border-radius: 3px; margin-top: 2px; }
         .part-barra { background: #a78bfa; height: 5px; border-radius: 3px; }
 
@@ -80,7 +81,7 @@
     <table class="header">
         <tr>
             @if ($logo)
-                <td style="width: 70px;"><img src="{{ $logo }}" class="logo" alt="Santini"></td>
+                <td style="width: 94px;"><img src="{{ $logo }}" class="logo" alt="Santini"></td>
             @endif
             <td>
                 <div class="marca">SANTINI</div>
@@ -89,7 +90,7 @@
             </td>
             <td style="width: 210px;">
                 <div class="caja-periodo">
-                    <div class="etq">Periodo</div>
+                    <div class="etq">{{ $etiquetaPeriodo ?? 'Periodo' }}</div>
                     <div class="val">{{ $periodo }}</div>
                     <div class="filtros">
                         Generado {{ $generadoEn->format('d/m/Y H:i') }}@if ($generadoPor) · {{ $generadoPor }}@endif

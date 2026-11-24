@@ -5,8 +5,11 @@ namespace App\Http\Controllers;
 use App\Models\InventarioProductoTerminado;
 use App\Models\ProductoTerminado;
 use App\Services\ProductoTerminadoService;
+use App\Services\ReporteInventarioService;
+use App\Support\PdfReporte;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 
 class ProductoTerminadoController extends Controller
@@ -33,6 +36,19 @@ class ProductoTerminadoController extends Controller
             'sort' => request('sort'),
             'dir' => request('dir'),
         ]);
+    }
+
+    /**
+     * Reporte PDF del inventario actual de producto terminado (bodega y camión).
+     */
+    public function exportPdf(ReporteInventarioService $reportes): Response
+    {
+        return PdfReporte::descargar(
+            'inventario.productos-terminados.reporte-pdf',
+            $reportes->productoTerminado(),
+            'Inventario de producto terminado',
+            'inventario-producto-terminado',
+        );
     }
 
     public function create(): View
