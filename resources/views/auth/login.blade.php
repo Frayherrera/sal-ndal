@@ -97,7 +97,7 @@
                 <!-- Remember Me -->
                 <div class="flex items-center justify-between mb-6">
                     <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="remember" class="w-4 h-4 rounded border-white/30 bg-white/10 text-blue-500 focus:ring-blue-500 focus:ring-offset-0">
+                        <input type="checkbox" name="remember" value="1" checked class="w-4 h-4 rounded border-white/30 bg-white/10 text-blue-500 focus:ring-blue-500 focus:ring-offset-0">
                         <span class="text-sm text-white/70">Recordarme</span>
                     </label>
                 </div>

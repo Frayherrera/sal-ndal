@@ -19,7 +19,8 @@ class LoginController extends Controller
             'password' => ['required'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        // «Recordarme» guarda una cookie que mantiene la sesión hasta cerrar sesión
+        if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
             return redirect()->intended('/gestion');
