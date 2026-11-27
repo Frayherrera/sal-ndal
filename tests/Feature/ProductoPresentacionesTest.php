@@ -151,6 +151,18 @@ class ProductoPresentacionesTest extends TestCase
     }
 
     #[Test]
+    public function el_listado_trae_el_buscador_con_nombre_y_codigos(): void
+    {
+        $this->presentacion('AZÚCAR DE LECHE', 'ESP', 15, 0, ['codigo' => 'PT-016A']);
+        $this->presentacion('AZÚCAR DE LECHE', 'B2C', 8, 0, ['codigo' => 'PT-016B']);
+
+        $this->get('/inventario/productos-terminados?q=azucar')->assertOk()
+            ->assertSee('id="buscador" value="azucar"', false)
+            ->assertSee('data-buscar="azucar de leche pt-016b pt-016a"', false)
+            ->assertSee('1 productos');
+    }
+
+    #[Test]
     public function el_detalle_muestra_las_presentaciones_y_el_kardex_de_la_elegida(): void
     {
         $esp = $this->presentacion('CURCUMA', 'ESP', 9, 60);

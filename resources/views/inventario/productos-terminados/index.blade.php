@@ -12,15 +12,15 @@
             <div class="glass-card rounded-xl p-1.5 flex items-center gap-1">
                 <i class="fas fa-sort text-white/40 px-2"></i>
                 <a href="{{ route('inventario.productos-terminados.index') }}"
-                   class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ !request('sort') ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5' }}">
+                   class="orden-link px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ !request('sort') ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5' }}">
                     Nombre
                 </a>
                 <a href="{{ route('inventario.productos-terminados.index', ['sort' => 'stock', 'dir' => 'desc']) }}"
-                   class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') !== 'asc' ? 'bg-blue-500/30 text-blue-200' : 'text-white/50 hover:bg-white/5' }}">
+                   class="orden-link px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') !== 'asc' ? 'bg-blue-500/30 text-blue-200' : 'text-white/50 hover:bg-white/5' }}">
                     <i class="fas fa-caret-down"></i> Stock
                 </a>
                 <a href="{{ route('inventario.productos-terminados.index', ['sort' => 'stock', 'dir' => 'asc']) }}"
-                   class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') === 'asc' ? 'bg-purple-500/30 text-purple-200' : 'text-white/50 hover:bg-white/5' }}">
+                   class="orden-link px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') === 'asc' ? 'bg-purple-500/30 text-purple-200' : 'text-white/50 hover:bg-white/5' }}">
                     <i class="fas fa-caret-up"></i> Stock
                 </a>
             </div>
@@ -42,6 +42,17 @@
         use App\Models\ProductoTerminado;
         use App\Support\Paquetes;
     @endphp
+    @if ($productos->isNotEmpty())
+        <div class="glass-card rounded-2xl p-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3 animate-delay-100">
+            <div class="relative flex-1">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/40"></i>
+                <input type="search" id="buscador" value="{{ request('q') }}" autocomplete="off"
+                       class="input-glass pl-11" placeholder="Buscar producto o código…" aria-label="Buscar producto o código">
+            </div>
+            <span id="contador" class="text-sm text-white/50 whitespace-nowrap">{{ $productos->count() }} productos</span>
+        </div>
+    @endif
+
     <div class="glass-card rounded-2xl p-2 animate-delay-100 overflow-x-auto">
         @if ($productos->isEmpty())
             <div class="text-center py-16">
@@ -64,7 +75,8 @@
                 </thead>
                 <tbody>
                     @foreach ($productos as $producto)
-                        <tr class="border-b border-white/5 hover:bg-white/5 transition-colors {{ $producto->activo ? '' : 'opacity-60' }}">
+                        <tr class="fila-producto border-b border-white/5 hover:bg-white/5 transition-colors {{ $producto->activo ? '' : 'opacity-60' }}"
+                            data-buscar="{{ \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii($producto->nombre.' '.$producto->presentaciones->pluck('codigo')->implode(' '))) }}">
                             <td class="p-4">
                                 <a href="{{ route('inventario.productos-terminados.show', $producto) }}" class="text-white font-medium hover:text-blue-200">{{ $producto->nombre }}</a>
                                 <span class="block text-xs text-white/40 mt-0.5">{{ $producto->presentaciones->count() }} {{ $producto->presentaciones->count() === 1 ? 'presentación' : 'presentaciones' }}</span>
@@ -134,6 +146,10 @@
                     @endforeach
                 </tbody>
             </table>
+            <div id="sinResultados" class="hidden text-center py-12">
+                <i class="fas fa-search text-3xl text-white/20 mb-3"></i>
+                <p class="text-white/60 text-sm">Ningún producto coincide con la búsqueda.</p>
+            </div>
         @endif
     </div>
 @endsection
@@ -168,6 +184,47 @@
             });
         }
     });
+
+    // Buscador: filtra por nombre y código sin distinguir tildes ni mayúsculas
+    var buscador = document.getElementById('buscador');
+    if (buscador) {
+        var filas = Array.prototype.slice.call(document.querySelectorAll('.fila-producto'));
+        var contador = document.getElementById('contador');
+        var sinResultados = document.getElementById('sinResultados');
+        var normalizar = function (t) {
+            return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+        };
+
+        var filtrar = function () {
+            var palabras = normalizar(buscador.value).split(/\s+/).filter(Boolean);
+            var visibles = 0;
+            filas.forEach(function (fila) {
+                var ok = palabras.every(function (p) { return fila.dataset.buscar.indexOf(p) !== -1; });
+                fila.style.display = ok ? '' : 'none';
+                if (ok) visibles++;
+            });
+            contador.textContent = visibles === filas.length
+                ? filas.length + ' productos'
+                : visibles + ' de ' + filas.length + ' productos';
+            sinResultados.classList.toggle('hidden', visibles > 0);
+
+            // Conserva la búsqueda en la URL y en los enlaces de orden
+            var url = new URL(window.location.href);
+            buscador.value.trim() ? url.searchParams.set('q', buscador.value.trim()) : url.searchParams.delete('q');
+            history.replaceState(null, '', url);
+            document.querySelectorAll('.orden-link').forEach(function (a) {
+                var destino = new URL(a.href);
+                buscador.value.trim() ? destino.searchParams.set('q', buscador.value.trim()) : destino.searchParams.delete('q');
+                a.href = destino;
+            });
+        };
+
+        buscador.addEventListener('input', filtrar);
+        buscador.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') { buscador.value = ''; filtrar(); }
+        });
+        if (buscador.value) filtrar();
+    }
 })();
 </script>
 @endpush
