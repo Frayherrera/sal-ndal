@@ -58,9 +58,22 @@ class RecetaController extends Controller
     public function edit(ProductoTerminado $producto): View
     {
         $producto->load('receta.materiaPrima');
-        $materiasPrimas = MateriaPrima::where('activo', true)->orderBy('nombre')->get();
+        // Activas, más las inactivas que ya usa la receta (para no cambiarlas sin querer al guardar)
+        $materiasPrimas = MateriaPrima::where('activo', true)
+            ->orWhereIn('id', $producto->receta->pluck('materia_prima_id'))
+            ->orderBy('nombre')
+            ->get();
 
-        return view('inventario.recetas.edit', compact('producto', 'materiasPrimas'));
+        // Filas del formulario: lo enviado (si volvió con errores), la receta o una fila vacía
+        $filas = collect(old('lineas', $producto->receta->map(fn ($l) => [
+            'materia_prima_id' => $l->materia_prima_id,
+            'gramos_por_unidad' => $l->gramos_por_unidad,
+        ])->all()))->values();
+        if ($filas->isEmpty()) {
+            $filas = collect([['materia_prima_id' => null, 'gramos_por_unidad' => null]]);
+        }
+
+        return view('inventario.recetas.edit', compact('producto', 'materiasPrimas', 'filas'));
     }
 
     public function update(Request $request, ProductoTerminado $producto): RedirectResponse

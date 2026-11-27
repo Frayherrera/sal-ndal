@@ -36,18 +36,26 @@
                     <p class="text-white/40 text-xs mb-4">
                         Gramos de cada materia prima necesarios para producir UNA unidad.
                     </p>
+                    {{-- Opciones para las filas nuevas (no dependen de que exista una fila) --}}
+                    <template id="opcionesMateria">
+                        <option value="">Seleccionar materia prima...</option>
+                        @foreach ($materiasPrimas as $mp)
+                            <option value="{{ $mp->id }}">{{ $mp->nombre }}{{ $mp->activo ? '' : ' (inactiva)' }}</option>
+                        @endforeach
+                    </template>
                     <div id="lineas" class="space-y-3">
-                        @foreach ($producto->receta as $i => $linea)
+                        @foreach ($filas as $i => $fila)
                             <div class="linea-receta grid grid-cols-[1fr_auto_auto_auto] gap-3 items-center">
                                 <select name="lineas[{{ $i }}][materia_prima_id]" class="input-glass bg-gray-900/60" required>
+                                    <option value="">Seleccionar materia prima...</option>
                                     @foreach ($materiasPrimas as $mp)
-                                        <option value="{{ $mp->id }}" @selected(old("lineas.$i.materia_prima_id", $linea->materia_prima_id) == $mp->id)>
-                                            {{ $mp->nombre }}
+                                        <option value="{{ $mp->id }}" @selected((string) ($fila['materia_prima_id'] ?? '') === (string) $mp->id)>
+                                            {{ $mp->nombre }}{{ $mp->activo ? '' : ' (inactiva)' }}
                                         </option>
                                     @endforeach
                                 </select>
                                 <input type="number" name="lineas[{{ $i }}][gramos_por_unidad]" min="0.001" step="0.001"
-                                       value="{{ old("lineas.$i.gramos_por_unidad", $linea->gramos_por_unidad) }}"
+                                       value="{{ $fila['gramos_por_unidad'] ?? '' }}"
                                        placeholder="Gramos" class="input-glass w-32" required>
                                 <span class="text-white/50 text-sm">g</span>
                                 <button type="button" class="quitar-linea w-9 h-9 flex items-center justify-center rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors">
@@ -82,8 +90,8 @@
     const agregar = document.getElementById('agregarLinea');
     if (!lineas || !agregar) return;
 
-    let indice = {{ max($producto->receta->count(), 1) }};
-    const opcionesMateria = lineas.querySelector('.linea-receta select').innerHTML;
+    let indice = {{ $filas->count() }};
+    const opcionesMateria = document.getElementById('opcionesMateria').innerHTML;
 
     function nuevaLinea() {
         const div = document.createElement('div');

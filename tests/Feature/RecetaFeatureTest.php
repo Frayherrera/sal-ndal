@@ -117,4 +117,40 @@ class RecetaFeatureTest extends TestCase
 
         $this->assertSame(0, $pt->receta()->count());
     }
+
+    #[Test]
+    public function editar_una_presentacion_sin_receta_muestra_una_fila_vacia_y_guarda(): void
+    {
+        // Se llega desde «Definir» en el detalle del producto; antes el JS fallaba sin filas
+        $pt = ProductoTerminado::factory()->create();
+        $mp = MateriaPrima::factory()->create(['nombre' => 'SAL MARINA', 'activo' => true]);
+
+        $html = $this->actingAs($this->user)
+            ->get("/inventario/recetas/{$pt->id}/editar")
+            ->assertOk()
+            ->assertSee('<template id="opcionesMateria">', false)
+            ->getContent();
+        $this->assertSame(1, substr_count($html, 'class="linea-receta'));
+        $this->assertStringContainsString('name="lineas[0][materia_prima_id]"', $html);
+
+        $this->put("/inventario/recetas/{$pt->id}", [
+            'lineas' => [['materia_prima_id' => $mp->id, 'gramos_por_unidad' => 4.5]],
+        ])->assertRedirect(route('inventario.recetas.edit', $pt));
+
+        $this->assertSame(1, $pt->receta()->count());
+    }
+
+    #[Test]
+    public function editar_conserva_una_materia_prima_inactiva_de_la_receta(): void
+    {
+        $pt = ProductoTerminado::factory()->create();
+        $inactiva = MateriaPrima::factory()->create(['nombre' => 'PIMIENTA VIEJA', 'activo' => false]);
+        $pt->receta()->create(['materia_prima_id' => $inactiva->id, 'gramos_por_unidad' => 3]);
+
+        $this->actingAs($this->user)
+            ->get("/inventario/recetas/{$pt->id}/editar")
+            ->assertOk()
+            ->assertSee('PIMIENTA VIEJA (inactiva)')
+            ->assertSee('value="'.$inactiva->id.'" selected', false);
+    }
 }
