@@ -54,9 +54,20 @@
                 </div>
 
                 <div class="mb-5">
-                    <label class="block text-sm font-medium text-white/80 mb-2">Unidades a producir *</label>
-                    <input type="number" min="1" step="1" name="cantidad" id="cantidadInput"
-                           value="{{ old('cantidad') }}" required class="input-glass">
+                    <label class="block text-sm font-medium text-white/80 mb-2">Cantidad a producir *</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <input type="number" min="0" step="1" name="paquetes" id="paquetesInput"
+                                   value="{{ old('paquetes') }}" class="input-glass" placeholder="0" aria-label="Paquetes">
+                            <p class="text-white/40 text-xs mt-1">Paquetes de {{ \App\Support\Paquetes::UNIDADES }} u</p>
+                        </div>
+                        <div>
+                            <input type="number" min="0" step="1" name="sueltas" id="sueltasInput"
+                                   value="{{ old('sueltas') }}" class="input-glass" placeholder="0" aria-label="Unidades sueltas">
+                            <p class="text-white/40 text-xs mt-1">Unidades sueltas (opcional)</p>
+                        </div>
+                    </div>
+                    <p class="text-white/60 text-sm mt-2" id="totalUnidades"></p>
                 </div>
 
                 <!-- Desglose de materias primas por consumir -->
@@ -101,14 +112,19 @@
 (function () {
     const productos = @json($productosJson);
     const select = document.getElementById('productoSelect');
-    const cantidad = document.getElementById('cantidadInput');
+    const paquetes = document.getElementById('paquetesInput');
+    const sueltas = document.getElementById('sueltasInput');
+    const total = document.getElementById('totalUnidades');
     const desglose = document.getElementById('desglose');
     const lista = document.getElementById('desgloseLista');
     const hint = document.getElementById('recetaHint');
+    const POR_PAQUETE = {{ \App\Support\Paquetes::UNIDADES }};
 
     function actualizar() {
         const producto = productos.find(p => p.id === Number(select.value));
-        const unidades = Number(cantidad.value) || 0;
+        const unidades = (parseInt(paquetes.value, 10) || 0) * POR_PAQUETE + (parseInt(sueltas.value, 10) || 0);
+
+        total.textContent = unidades > 0 ? `Total: ${unidades.toLocaleString('es-CO')} unidades` : '';
 
         if (!producto) {
             hint.textContent = '';
@@ -140,7 +156,8 @@
     }
 
     select.addEventListener('change', actualizar);
-    cantidad.addEventListener('input', actualizar);
+    paquetes.addEventListener('input', actualizar);
+    sueltas.addEventListener('input', actualizar);
     actualizar();
 })();
 </script>

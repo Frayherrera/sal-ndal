@@ -43,7 +43,7 @@ class ProduccionFeatureTest extends TestCase
         $this->actingAs($this->user)
             ->post('/inventario/produccion', [
                 'producto_terminado_id' => $pt->id,
-                'cantidad' => '30',
+                'paquetes' => '1', 'sueltas' => '10',
                 'fecha' => now()->format('Y-m-d\TH:i'),
             ])
             ->assertRedirect(route('inventario.movimientos.index'))
@@ -78,7 +78,7 @@ class ProduccionFeatureTest extends TestCase
         $this->actingAs($this->user)
             ->post('/inventario/produccion', [
                 'producto_terminado_id' => $pt->id,
-                'cantidad' => '5',
+                'sueltas' => '5',
                 'fecha' => now()->format('Y-m-d\TH:i'),
             ])
             ->assertSessionHas('error');
@@ -97,7 +97,7 @@ class ProduccionFeatureTest extends TestCase
         $this->actingAs($this->user)
             ->post('/inventario/produccion', [
                 'producto_terminado_id' => $pt->id,
-                'cantidad' => '50',
+                'paquetes' => '2', 'sueltas' => '10',
                 'fecha' => now()->format('Y-m-d\TH:i'),
             ])
             ->assertSessionHas('error');
@@ -106,6 +106,40 @@ class ProduccionFeatureTest extends TestCase
         $this->assertSame(100, $mp->fresh()->inventario->stock_gramos);
         $this->assertDatabaseCount('movimientos_inventario', 0);
         $this->assertDatabaseCount('detalle_receta', 1);
+    }
+
+    #[Test]
+    public function produce_por_paquetes_y_convierte_a_unidades(): void
+    {
+        $mp = MateriaPrima::factory()->create();
+        InventarioMateriaPrima::create(['materia_prima_id' => $mp->id, 'stock_gramos' => 100000, 'costo_promedio' => 0]);
+        $pt = $this->productoConReceta([$mp->id => 10]);
+
+        $this->actingAs($this->user)
+            ->post('/inventario/produccion', [
+                'producto_terminado_id' => $pt->id,
+                'paquetes' => '5',
+            ])
+            ->assertRedirect(route('inventario.movimientos.index'))
+            ->assertSessionHas('success', fn ($msg) => str_contains($msg, '5 p'));
+
+        // 5 paquetes × 20 = 100 unidades × 10 g = 1000 g
+        $this->assertSame(100, $pt->fresh()->inventario->disponible);
+        $this->assertSame(99000, $mp->fresh()->inventario->stock_gramos);
+    }
+
+    #[Test]
+    public function rechaza_produccion_sin_paquetes_ni_unidades(): void
+    {
+        $mp = MateriaPrima::factory()->create();
+        InventarioMateriaPrima::create(['materia_prima_id' => $mp->id, 'stock_gramos' => 100000, 'costo_promedio' => 0]);
+        $pt = $this->productoConReceta([$mp->id => 10]);
+
+        $this->actingAs($this->user)
+            ->post('/inventario/produccion', ['producto_terminado_id' => $pt->id, 'paquetes' => '0', 'sueltas' => ''])
+            ->assertSessionHasErrors('paquetes');
+
+        $this->assertDatabaseCount('movimientos_inventario', 0);
     }
 
     #[Test]

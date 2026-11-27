@@ -84,7 +84,7 @@ Arquitectura **Controller → Service → Model** (sin Livewire ni Alpine; JS pl
 
 **Tipos de movimiento:** `compra_recepcion`, `consumo_produccion`, `producto_producido`, `venta_despacho`, `devolucion`, `ajuste_positivo`, `ajuste_negativo`, `anulacion_reversion`.
 
-**Producción con receta (BOM):** el módulo `ProduccionController` + `MovimientoInventarioService::producir()` registra en **una transacción** los movimientos `consumo_produccion` (salida, resta materia prima) + `producto_producido` (entrada, suma producto). Pre-valida stock de todas las materias primas y aborta (rollback) si alguna no alcanza. Las recetas se definen en el módulo `RecetaController`/`RecetaService` (modo `/inventario/recetas`).
+**Producción con receta (BOM):** el módulo `ProduccionController` + `MovimientoInventarioService::producir()` registra en **una transacción** los movimientos `consumo_produccion` (salida, resta materia prima) + `producto_producido` (entrada, suma producto). Pre-valida stock de todas las materias primas y aborta (rollback) si alguna no alcanza. Las recetas se definen en el módulo `RecetaController`/`RecetaService` (modo `/inventario/recetas`). El formulario de producción captura **paquetes + unidades sueltas** (`paquetes`, `sueltas`) y el controlador los convierte a unidades con `Paquetes::aUnidades()`.
 
 **Servicios clave:** `app/Services/MovimientoInventarioService.php` (motor de stock, `producir()`, transacciones, validación de stock negativo, anulaciones por reversión), `RecetaService.php` (CRUD de recetas/BOM), `ConteoFisicoService.php` (aprobación genera ajustes), `InventarioService.php` (dashboard + alertas).
 
