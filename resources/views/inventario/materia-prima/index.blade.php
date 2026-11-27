@@ -12,15 +12,15 @@
             <div class="glass-card rounded-xl p-1.5 flex items-center gap-1">
                 <i class="fas fa-sort text-white/40 px-2"></i>
                 <a href="{{ route('inventario.materia-prima.index') }}"
-                   class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ !request('sort') ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5' }}">
+                   class="orden-link px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ !request('sort') ? 'bg-white/10 text-white' : 'text-white/50 hover:bg-white/5' }}">
                     Nombre
                 </a>
                 <a href="{{ route('inventario.materia-prima.index', ['sort' => 'stock', 'dir' => 'desc']) }}"
-                   class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') !== 'asc' ? 'bg-blue-500/30 text-blue-200' : 'text-white/50 hover:bg-white/5' }}">
+                   class="orden-link px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') !== 'asc' ? 'bg-blue-500/30 text-blue-200' : 'text-white/50 hover:bg-white/5' }}">
                     <i class="fas fa-caret-down"></i> Stock
                 </a>
                 <a href="{{ route('inventario.materia-prima.index', ['sort' => 'stock', 'dir' => 'asc']) }}"
-                   class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') === 'asc' ? 'bg-purple-500/30 text-purple-200' : 'text-white/50 hover:bg-white/5' }}">
+                   class="orden-link px-3 py-1.5 rounded-lg text-xs font-medium transition-colors {{ request('sort') === 'stock' && request('dir') === 'asc' ? 'bg-purple-500/30 text-purple-200' : 'text-white/50 hover:bg-white/5' }}">
                     <i class="fas fa-caret-up"></i> Stock
                 </a>
             </div>
@@ -37,6 +37,10 @@
             </a>
         </div>
     </div>
+
+    @if ($materiasPrimas->isNotEmpty())
+        @include('inventario._buscador', ['total' => $materiasPrimas->count(), 'nombre' => 'materias primas', 'placeholder' => 'Buscar por nombre, código, categoría o proveedor…'])
+    @endif
 
     <div class="glass-card rounded-2xl p-2 animate-delay-100 overflow-x-auto">
         @if ($materiasPrimas->isEmpty())
@@ -61,7 +65,8 @@
                 </thead>
                 <tbody>
                     @foreach ($materiasPrimas as $mp)
-                        <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <tr class="fila-buscable border-b border-white/5 hover:bg-white/5 transition-colors"
+                            data-buscar="{{ \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii(collect([$mp->nombre, $mp->codigo, $mp->categoria, $mp->proveedor, $mp->es_molido ? 'molido' : null])->filter()->implode(' '))) }}">
                             <td class="p-4 font-mono text-blue-300 hidden sm:table-cell">{{ $mp->codigo }}</td>
                             <td class="p-4 text-white font-medium">
                                 {{ $mp->nombre }}
@@ -138,6 +143,10 @@
                     @endforeach
                 </tbody>
             </table>
+            <div id="sinResultados" class="hidden text-center py-12">
+                <i class="fas fa-search text-3xl text-white/20 mb-3"></i>
+                <p class="text-white/60 text-sm">Ninguna materia prima coincide con la búsqueda.</p>
+            </div>
         @endif
     </div>
 @endsection

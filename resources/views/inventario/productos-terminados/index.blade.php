@@ -43,14 +43,7 @@
         use App\Support\Paquetes;
     @endphp
     @if ($productos->isNotEmpty())
-        <div class="glass-card rounded-2xl p-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-3 animate-delay-100">
-            <div class="relative flex-1">
-                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/40"></i>
-                <input type="search" id="buscador" value="{{ request('q') }}" autocomplete="off"
-                       class="input-glass pl-11" placeholder="Buscar producto o código…" aria-label="Buscar producto o código">
-            </div>
-            <span id="contador" class="text-sm text-white/50 whitespace-nowrap">{{ $productos->count() }} productos</span>
-        </div>
+        @include('inventario._buscador', ['total' => $productos->count(), 'nombre' => 'productos', 'placeholder' => 'Buscar producto o código…'])
     @endif
 
     <div class="glass-card rounded-2xl p-2 animate-delay-100 overflow-x-auto">
@@ -75,7 +68,7 @@
                 </thead>
                 <tbody>
                     @foreach ($productos as $producto)
-                        <tr class="fila-producto border-b border-white/5 hover:bg-white/5 transition-colors {{ $producto->activo ? '' : 'opacity-60' }}"
+                        <tr class="fila-buscable border-b border-white/5 hover:bg-white/5 transition-colors {{ $producto->activo ? '' : 'opacity-60' }}"
                             data-buscar="{{ \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii($producto->nombre.' '.$producto->presentaciones->pluck('codigo')->implode(' '))) }}">
                             <td class="p-4">
                                 <a href="{{ route('inventario.productos-terminados.show', $producto) }}" class="text-white font-medium hover:text-blue-200">{{ $producto->nombre }}</a>
@@ -184,47 +177,6 @@
             });
         }
     });
-
-    // Buscador: filtra por nombre y código sin distinguir tildes ni mayúsculas
-    var buscador = document.getElementById('buscador');
-    if (buscador) {
-        var filas = Array.prototype.slice.call(document.querySelectorAll('.fila-producto'));
-        var contador = document.getElementById('contador');
-        var sinResultados = document.getElementById('sinResultados');
-        var normalizar = function (t) {
-            return t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
-        };
-
-        var filtrar = function () {
-            var palabras = normalizar(buscador.value).split(/\s+/).filter(Boolean);
-            var visibles = 0;
-            filas.forEach(function (fila) {
-                var ok = palabras.every(function (p) { return fila.dataset.buscar.indexOf(p) !== -1; });
-                fila.style.display = ok ? '' : 'none';
-                if (ok) visibles++;
-            });
-            contador.textContent = visibles === filas.length
-                ? filas.length + ' productos'
-                : visibles + ' de ' + filas.length + ' productos';
-            sinResultados.classList.toggle('hidden', visibles > 0);
-
-            // Conserva la búsqueda en la URL y en los enlaces de orden
-            var url = new URL(window.location.href);
-            buscador.value.trim() ? url.searchParams.set('q', buscador.value.trim()) : url.searchParams.delete('q');
-            history.replaceState(null, '', url);
-            document.querySelectorAll('.orden-link').forEach(function (a) {
-                var destino = new URL(a.href);
-                buscador.value.trim() ? destino.searchParams.set('q', buscador.value.trim()) : destino.searchParams.delete('q');
-                a.href = destino;
-            });
-        };
-
-        buscador.addEventListener('input', filtrar);
-        buscador.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') { buscador.value = ''; filtrar(); }
-        });
-        if (buscador.value) filtrar();
-    }
 })();
 </script>
 @endpush

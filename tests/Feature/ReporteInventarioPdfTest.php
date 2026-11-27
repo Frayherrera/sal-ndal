@@ -152,6 +152,17 @@ class ReporteInventarioPdfTest extends TestCase
     }
 
     #[Test]
+    public function el_listado_de_materia_prima_trae_el_buscador(): void
+    {
+        $this->materia('CÚRCUMA', 1000, 0, ['codigo' => 'MP-CUR', 'categoria' => 'Especias', 'proveedor' => 'La Huerta']);
+
+        $this->get('/inventario/materia-prima?q=curcuma')->assertOk()
+            ->assertSee('id="buscador" value="curcuma"', false)
+            ->assertSee('data-buscar="curcuma mp-cur especias la huerta"', false)
+            ->assertSee('1 materias primas');
+    }
+
+    #[Test]
     public function la_ruta_del_reporte_no_choca_con_el_detalle_del_articulo(): void
     {
         $mp = $this->materia('COMINO', 1000, 0);
