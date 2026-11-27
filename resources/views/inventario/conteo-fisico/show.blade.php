@@ -18,10 +18,10 @@
                 'unidad' => $m->unidad_base === 'kg' ? 'kg' : 'g',
                 'stock' => $m->unidad_base === 'kg' ? $m->stock_gramos() / 1000 : $m->stock_gramos(),
             ])
-        : \App\Models\ProductoTerminado::where('activo', true)->with('inventario')->orderBy('nombre')->get()
+        : \App\Models\ProductoTerminado::where('activo', true)->with('inventario')->ordenado()->get()
             ->map(fn ($p) => [
                 'id' => $p->id,
-                'nombre' => $p->nombre,
+                'nombre' => $p->nombreCompleto(),
                 'unidad' => 'u',
                 'stock' => $p->stock_disponible(),
             ])
@@ -227,7 +227,7 @@
                 <tbody>
                     @foreach ($conteo->detalles as $detalle)
                         @php
-                            $nombre = $detalle->materiaPrima?->nombre ?? $detalle->productoTerminado?->nombre ?? 'N/D';
+                            $nombre = $detalle->materiaPrima?->nombre ?? $detalle->productoTerminado?->nombreCompleto() ?? 'N/D';
                             $u = $unidadDe($detalle);
                             $dif = $enUnidad($detalle->diferencia, $u);
                         @endphp

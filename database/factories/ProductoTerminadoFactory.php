@@ -15,7 +15,7 @@ class ProductoTerminadoFactory extends Factory
         return [
             'codigo' => 'PT-'.strtoupper($this->faker->unique()->lexify('????')),
             'nombre' => $this->faker->randomElement(['Comino 100g', 'Orégano 30g', 'Pimentón 50g', 'Curry 30g', 'Cúrcuma 100g']),
-            'categoria' => $this->faker->randomElement(['Hierbas', 'Condimentos']),
+            'categoria' => $this->faker->randomElement(['B2C', 'ESP']),
             'presentacion' => $this->faker->randomElement(['bolsa', 'frasco']),
             'peso_neto' => $this->faker->randomElement([30, 50, 100]),
             'precio_venta' => $this->faker->randomFloat(2, 3000, 20000),

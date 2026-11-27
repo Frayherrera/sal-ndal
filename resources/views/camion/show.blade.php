@@ -115,7 +115,7 @@
                 @foreach ($detalles as $d)
                     <tr class="border-b border-white/5 hover:bg-white/5">
                         <td class="p-3">
-                            <div class="text-white font-medium">{{ $d->producto?->nombre }}</div>
+                            <div class="text-white font-medium">{{ $d->producto?->nombreCompleto() }}</div>
                             <div class="text-xs text-white/40">{{ $d->producto?->presentacion }}</div>
                         </td>
                         <td class="p-3 text-right text-white/60 whitespace-nowrap hidden lg:table-cell">{{ Paquetes::texto($d->inicial) }}</td>

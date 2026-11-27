@@ -2,11 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * Presentación comercial de un Producto (línea B2C / Especial + peso). Es el SKU:
+ * tiene stock, receta, kardex y movimientos del camión propios. La línea se
+ * guarda en `categoria` y `nombre` se mantiene igual al del producto padre.
+ */
 class ProductoTerminado extends Model
 {
     use HasFactory;
@@ -16,7 +23,11 @@ class ProductoTerminado extends Model
      */
     public const UNIDADES_POR_PAQUETE = 20;
 
+    /** Líneas de presentación (valor guardado en `categoria` => etiqueta). */
+    public const LINEAS = ['B2C' => 'B2C', 'ESP' => 'Especial'];
+
     protected $fillable = [
+        'producto_id',
         'codigo',
         'nombre',
         'categoria',
@@ -36,6 +47,50 @@ class ProductoTerminado extends Model
             'stock_minimo' => 'decimal:2',
             'activo' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Toda presentación pertenece a un producto: si no se indica, se usa
+        // (o se crea) el producto con el mismo nombre.
+        static::creating(function (ProductoTerminado $p) {
+            if (! $p->producto_id && filled($p->nombre)) {
+                $p->producto_id = Producto::firstOrCreate(['nombre' => trim($p->nombre)])->id;
+            }
+        });
+    }
+
+    /** Por nombre de producto, luego B2C antes que Especial y por peso. */
+    public function scopeOrdenado(Builder $query): Builder
+    {
+        return $query->orderBy('nombre')
+            ->orderByRaw("CASE categoria WHEN 'B2C' THEN 0 WHEN 'ESP' THEN 1 ELSE 2 END")
+            ->orderBy('peso_neto');
+    }
+
+    public function producto(): BelongsTo
+    {
+        return $this->belongsTo(Producto::class);
+    }
+
+    /** «B2C» / «Especial» (o la categoría tal cual si no es una línea conocida). */
+    public function linea(): string
+    {
+        return self::LINEAS[$this->categoria] ?? ($this->categoria ?: 'Sin línea');
+    }
+
+    /** «Especial 20 g» */
+    public function etiqueta(): string
+    {
+        $peso = (float) $this->peso_neto;
+
+        return trim($this->linea().($peso > 0 ? ' '.rtrim(rtrim(number_format($peso, 2, ',', '.'), '0'), ',').' g' : ''));
+    }
+
+    /** «COMINO MOLIDO · Especial 20 g» */
+    public function nombreCompleto(): string
+    {
+        return $this->nombre.' · '.$this->etiqueta();
     }
 
     public function inventario(): HasOne

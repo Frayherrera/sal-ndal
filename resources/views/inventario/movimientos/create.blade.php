@@ -61,11 +61,10 @@
                     <label class="block text-sm font-medium text-white/80 mb-2">Producto terminado *</label>
                     <select name="producto_terminado_id" id="productoSelect" class="input-glass bg-gray-900/60">
                         <option value="">Seleccionar producto...</option>
-                        @foreach ($productos as $pt)
-                            <option value="{{ $pt->id }}" @selected(old('producto_terminado_id') == $pt->id)>
-                                {{ $pt->nombre }} ({{ $pt->codigo }})
-                            </option>
-                        @endforeach
+                        @include('inventario._opciones-presentaciones', [
+                            'presentaciones' => $productos,
+                            'seleccionado' => old('producto_terminado_id', request('producto_terminado_id')),
+                        ])
                     </select>
                 </div>
 

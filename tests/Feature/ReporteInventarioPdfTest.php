@@ -68,28 +68,33 @@ class ReporteInventarioPdfTest extends TestCase
     #[Test]
     public function producto_terminado_suma_bodega_y_camion(): void
     {
-        $comino = $this->producto('COMINO', 400, 0, ['categoria' => 'ESP']);
+        $comino = $this->producto('COMINO', 400, 0, ['categoria' => 'ESP', 'peso_neto' => 20]);
+        $this->producto('COMINO', 60, 0, ['categoria' => 'B2C', 'peso_neto' => 12]); // misma fila, columna B2C
         $this->producto('CANELA', 0, 0, ['categoria' => 'ESP']);   // agotado
         $this->producto('ANIS', 30, 40, ['categoria' => 'B2C']);   // bajo mínimo
 
-        // 5 paquetes de comino al camión
+        // 5 paquetes de comino Especial al camión
         $ruta = Ruta::factory()->create();
         app(ViajeCamionService::class)->cargar(['ruta_id' => $ruta->id, 'lineas' => [$comino->id => ['surtido' => 100]]]);
 
         $datos = app(ReporteInventarioService::class)->productoTerminado();
 
-        $this->assertSame(330, $datos['kpis']['bodega']); // 300 + 0 + 30
+        $this->assertSame(390, $datos['kpis']['bodega']); // 300 + 60 + 0 + 30
         $this->assertSame(100, $datos['kpis']['camion']);
-        $this->assertSame(430, $datos['kpis']['total']);
+        $this->assertSame(490, $datos['kpis']['total']);
+        $this->assertSame(3, $datos['kpis']['productos']);
+        $this->assertSame(4, $datos['kpis']['articulos']); // presentaciones
         $this->assertSame(1, $datos['kpis']['agotados']);
         $this->assertSame(1, $datos['kpis']['bajos']);
+        $this->assertSame(['B2C' => 90, 'ESP' => 400], $datos['kpis']['por_linea']);
 
-        $esp = collect($datos['grupos'])->firstWhere('categoria', 'ESP');
-        $filaComino = collect($esp['filas'])->firstWhere('nombre', 'COMINO');
-        $this->assertSame(300, $filaComino['bodega']);
+        // Una fila por producto con las líneas en columnas
+        $this->assertSame(['ANIS', 'CANELA', 'COMINO'], array_column($datos['filas'], 'nombre'));
+        $filaComino = collect($datos['filas'])->firstWhere('nombre', 'COMINO');
+        $this->assertSame(400, $filaComino['lineas']['ESP']['total']); // 300 bodega + 100 camión
+        $this->assertSame(60, $filaComino['lineas']['B2C']['total']);
         $this->assertSame(100, $filaComino['camion']);
-        $this->assertSame(400, $filaComino['total']);
-        $this->assertSame(400, $esp['subtotal']['total']);
+        $this->assertSame(460, $filaComino['total']);
     }
 
     #[Test]
@@ -142,8 +147,8 @@ class ReporteInventarioPdfTest extends TestCase
     {
         $pt = $this->producto('COMINO', 245);
 
-        $this->get('/inventario/productos-terminados')->assertOk()->assertSee('12 p + 5 u')->assertSee('245 u');
-        $this->get("/inventario/productos-terminados/{$pt->id}")->assertOk()->assertSee('12 p + 5 u');
+        $this->get('/inventario/productos-terminados')->assertOk()->assertSee('12 p + 5 u');
+        $this->get("/inventario/productos-terminados/{$pt->producto_id}")->assertOk()->assertSee('12 p + 5 u')->assertSee('245 u');
     }
 
     #[Test]

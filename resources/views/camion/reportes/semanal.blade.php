@@ -87,7 +87,7 @@
                     @foreach ($filas as $fila)
                         <tr class="border-b border-white/5 hover:bg-white/5">
                             <td class="p-3 sticky left-0 bg-gray-900/80">
-                                <div class="text-white font-medium">{{ $fila['producto']?->nombre }}</div>
+                                <div class="text-white font-medium">{{ $fila['producto']?->nombreCompleto() }}</div>
                                 @if ($fila['merma'] > 0)
                                     <div class="text-xs text-red-300/80">merma {{ Paquetes::texto($fila['merma']) }}</div>
                                 @endif

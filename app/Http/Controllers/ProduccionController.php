@@ -18,7 +18,7 @@ class ProduccionController extends Controller
     {
         $productos = ProductoTerminado::where('activo', true)
             ->with('receta')
-            ->orderBy('nombre')
+            ->ordenado()
             ->get();
 
         return view('inventario.produccion.create', compact('productos'));

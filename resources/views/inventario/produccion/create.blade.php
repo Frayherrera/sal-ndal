@@ -43,12 +43,11 @@
                     <label class="block text-sm font-medium text-white/80 mb-2">Producto terminado *</label>
                     <select name="producto_terminado_id" id="productoSelect" class="input-glass bg-gray-900/60">
                         <option value="">Seleccionar producto...</option>
-                        @foreach ($productos as $producto)
-                            <option value="{{ $producto->id }}" @selected(old('producto_terminado_id') == $producto->id)>
-                                {{ $producto->nombre }} ({{ $producto->codigo }})
-                                @if ($producto->receta->isEmpty()) — sin receta @endif
-                            </option>
-                        @endforeach
+                        @include('inventario._opciones-presentaciones', [
+                            'presentaciones' => $productos,
+                            'seleccionado' => old('producto_terminado_id'),
+                            'sufijo' => fn ($pt) => $pt->receta->isEmpty() ? ' — sin receta' : '',
+                        ])
                     </select>
                     <p class="text-white/40 text-xs mt-1" id="recetaHint"></p>
                 </div>

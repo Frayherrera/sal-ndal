@@ -146,7 +146,7 @@
                 @foreach ($venta->detalles as $detalle)
                     <tr>
                         <td>
-                            {{ $detalle->producto?->nombre ?? 'Producto eliminado' }}
+                            {{ $detalle->producto?->nombreCompleto() ?? 'Producto eliminado' }}
                             <div class="codigo">{{ $detalle->producto?->codigo }}</div>
                         </td>
                         <td class="num">{{ $detalle->cantidad_unidades }}</td>

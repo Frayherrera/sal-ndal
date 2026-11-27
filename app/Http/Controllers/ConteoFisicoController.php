@@ -30,7 +30,7 @@ class ConteoFisicoController extends Controller
     {
         $tipo = $request->get('tipo', 'materia_prima');
         $materiasPrimas = MateriaPrima::where('activo', true)->with('inventario')->orderBy('nombre')->get();
-        $productos = ProductoTerminado::where('activo', true)->with('inventario')->orderBy('nombre')->get();
+        $productos = ProductoTerminado::where('activo', true)->with('inventario')->ordenado()->get();
 
         return view('inventario.conteo-fisico.create', compact('tipo', 'materiasPrimas', 'productos'));
     }

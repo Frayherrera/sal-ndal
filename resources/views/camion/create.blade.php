@@ -76,20 +76,27 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php $grupoAnterior = null; @endphp
                             @foreach ($productos as $fila)
                                 @php
                                     $p = $fila['producto'];
+                                    $grupo = \Illuminate\Support\Str::slug($p->nombre);
                                     $old = old("lineas.{$p->id}", []);
                                     $sugerido = max(0, $fila['promedio'] - $fila['en_camion']);
                                     $sugeridoPaquetes = (int) ceil($sugerido / Paquetes::UNIDADES);
                                 @endphp
-                                <tr class="border-b border-white/5 fila-producto"
+                                @if ($grupo !== $grupoAnterior)
+                                    <tr class="fila-grupo" data-grupo="{{ $grupo }}">
+                                        <td colspan="7" class="px-3 pt-4 pb-1 text-white font-semibold">{{ $p->nombre }}</td>
+                                    </tr>
+                                    @php $grupoAnterior = $grupo; @endphp
+                                @endif
+                                <tr class="border-b border-white/5 fila-producto" data-grupo="{{ $grupo }}"
                                     data-nombre="{{ \Illuminate\Support\Str::lower(\Illuminate\Support\Str::ascii($p->nombre)) }}"
                                     data-en-camion="{{ $fila['en_camion'] }}"
                                     data-sugerido="{{ $sugeridoPaquetes }}">
                                     <td class="p-3">
-                                        <div class="text-white font-medium">{{ $p->nombre }}</div>
-                                        <div class="text-xs text-white/40">{{ $p->presentacion }}</div>
+                                        <div class="text-white/90 pl-3">{{ $p->etiqueta() }}</div>
                                     </td>
                                     <td class="p-3 text-right text-white/80 whitespace-nowrap">{{ Paquetes::texto($fila['en_camion']) }}</td>
                                     <td class="p-3 text-right whitespace-nowrap hidden md:table-cell {{ $fila['bodega'] <= 0 ? 'text-red-300' : 'text-white/60' }}">{{ Paquetes::texto($fila['bodega']) }}</td>
@@ -97,18 +104,18 @@
                                     <td class="p-3">
                                         <div class="flex gap-1">
                                             <input type="number" min="0" step="1" name="lineas[{{ $p->id }}][surtido_p]" value="{{ $old['surtido_p'] ?? '' }}"
-                                                   class="input-glass w-20 text-right cant surtido-p" placeholder="0" aria-label="Paquetes a surtir de {{ $p->nombre }}">
+                                                   class="input-glass w-20 text-right cant surtido-p" placeholder="0" aria-label="Paquetes a surtir de {{ $p->nombreCompleto() }}">
                                             <input type="number" min="0" step="1" name="lineas[{{ $p->id }}][surtido_u]" value="{{ $old['surtido_u'] ?? '' }}"
-                                                   class="input-glass w-16 text-right cant surtido-u" placeholder="u" aria-label="Unidades sueltas a surtir de {{ $p->nombre }}">
+                                                   class="input-glass w-16 text-right cant surtido-u" placeholder="u" aria-label="Unidades sueltas a surtir de {{ $p->nombreCompleto() }}">
                                         </div>
                                     </td>
                                     <td class="p-3">
                                         @if ($fila['en_camion'] > 0)
                                             <div class="flex gap-1">
                                                 <input type="number" min="0" step="1" name="lineas[{{ $p->id }}][bajado_p]" value="{{ $old['bajado_p'] ?? '' }}"
-                                                       class="input-glass w-20 text-right cant bajado-p" placeholder="0" aria-label="Paquetes a bajar de {{ $p->nombre }}">
+                                                       class="input-glass w-20 text-right cant bajado-p" placeholder="0" aria-label="Paquetes a bajar de {{ $p->nombreCompleto() }}">
                                                 <input type="number" min="0" step="1" name="lineas[{{ $p->id }}][bajado_u]" value="{{ $old['bajado_u'] ?? '' }}"
-                                                       class="input-glass w-16 text-right cant bajado-u" placeholder="u" aria-label="Unidades sueltas a bajar de {{ $p->nombre }}">
+                                                       class="input-glass w-16 text-right cant bajado-u" placeholder="u" aria-label="Unidades sueltas a bajar de {{ $p->nombreCompleto() }}">
                                             </div>
                                         @else
                                             <span class="text-white/30">—</span>
@@ -177,6 +184,11 @@
         filas.forEach((fila) => {
             const visible = (!q || fila.dataset.nombre.includes(q)) && (!solo || fila.dataset.movimiento === '1');
             fila.style.display = visible ? '' : 'none';
+        });
+        // Encabezado del producto solo si alguna de sus presentaciones se ve
+        document.querySelectorAll('.fila-grupo').forEach((g) => {
+            const algunaVisible = filas.some((f) => f.dataset.grupo === g.dataset.grupo && f.style.display !== 'none');
+            g.style.display = algunaVisible ? '' : 'none';
         });
     }
 

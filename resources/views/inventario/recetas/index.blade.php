@@ -41,7 +41,7 @@
                         @php $totalG = $producto->gramosPorUnidad(); @endphp
                         <tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
                             <td class="p-4 font-mono text-blue-300">{{ $producto->codigo }}</td>
-                            <td class="p-4 text-white font-medium">{{ $producto->nombre }}</td>
+                            <td class="p-4 text-white font-medium">{{ $producto->nombre }} <span class="text-white/50 font-normal">· {{ $producto->etiqueta() }}</span></td>
                             <td class="p-4 text-white/60">{{ $producto->peso_neto }} g</td>
                             <td class="p-4 text-white/60">{{ $producto->receta->count() }} ingrediente(s)</td>
                             <td class="p-4 text-right text-white font-semibold">{{ number_format($totalG, 3) }} g</td>

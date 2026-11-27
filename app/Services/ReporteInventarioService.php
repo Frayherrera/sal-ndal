@@ -59,7 +59,8 @@ class ReporteInventarioService
     {
         $enCamion = $this->camion->stockCamion();
 
-        $filas = ProductoTerminado::with('inventario')->orderBy('nombre')->get()
+        // Una entrada por presentación (SKU)
+        $presentaciones = ProductoTerminado::with('inventario')->ordenado()->get()
             ->filter(fn (ProductoTerminado $p) => $p->activo || $p->stock_disponible() > 0 || ($enCamion[$p->id] ?? 0) > 0)
             ->map(function (ProductoTerminado $p) use ($enCamion) {
                 $bodega = $p->stock_disponible();
@@ -69,8 +70,9 @@ class ReporteInventarioService
                 return [
                     'codigo' => $p->codigo,
                     'nombre' => $p->nombre,
-                    'categoria' => filled($p->categoria) ? $p->categoria : 'Sin categoría',
-                    'presentacion' => $p->presentacion,
+                    'linea' => $p->categoria,
+                    'etiqueta' => $p->etiqueta(),
+                    'peso' => (float) $p->peso_neto,
                     'activo' => (bool) $p->activo,
                     'bodega' => $bodega,
                     'camion' => $camion,
@@ -82,18 +84,41 @@ class ReporteInventarioService
             })
             ->values();
 
+        // Una fila por producto con sus presentaciones repartidas por línea
+        $filas = $presentaciones->groupBy('nombre')
+            ->map(function (Collection $grupo, string $nombre) {
+                $lineas = [];
+                foreach (array_keys(ProductoTerminado::LINEAS) as $linea) {
+                    $deLinea = $grupo->where('linea', $linea)->values();
+                    $lineas[$linea] = [
+                        'presentaciones' => $deLinea->all(),
+                        'total' => (int) $deLinea->sum('total'),
+                    ];
+                }
+
+                return [
+                    'nombre' => $nombre,
+                    'activo' => $grupo->contains('activo', true),
+                    'lineas' => $lineas,
+                    'bodega' => (int) $grupo->sum('bodega'),
+                    'camion' => (int) $grupo->sum('camion'),
+                    'total' => (int) $grupo->sum('total'),
+                ];
+            })
+            ->values();
+
+        $totalLinea = fn (string $linea) => (int) $presentaciones->where('linea', $linea)->sum('total');
+
         return [
             'corte' => now(),
-            'kpis' => $this->kpis($filas) + [
-                'bodega' => (int) $filas->sum('bodega'),
-                'camion' => (int) $filas->sum('camion'),
-                'total' => (int) $filas->sum('total'),
+            'kpis' => $this->kpis($presentaciones) + [
+                'productos' => $filas->count(),
+                'bodega' => (int) $presentaciones->sum('bodega'),
+                'camion' => (int) $presentaciones->sum('camion'),
+                'total' => (int) $presentaciones->sum('total'),
+                'por_linea' => collect(ProductoTerminado::LINEAS)->map(fn ($e, $l) => $totalLinea($l))->all(),
             ],
-            'grupos' => $this->agrupar($filas, fn (Collection $g) => [
-                'bodega' => (int) $g->sum('bodega'),
-                'camion' => (int) $g->sum('camion'),
-                'total' => (int) $g->sum('total'),
-            ]),
+            'filas' => $filas->all(),
         ];
     }
 

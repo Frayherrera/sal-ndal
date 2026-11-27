@@ -9,6 +9,7 @@ use App\Models\ProductoTerminado;
 use App\Models\Venta;
 use App\Services\InventarioService;
 use App\Services\Telegram\TelegramFormato as F;
+use App\Support\Paquetes;
 use Illuminate\Support\Collection;
 use RuntimeException;
 
@@ -101,7 +102,7 @@ class TelegramConsultas
         $materias = MateriaPrima::with('inventario')->where('activo', true)
             ->where('nombre', 'like', $termino)->orderBy('nombre')->limit(15)->get();
         $productos = ProductoTerminado::with('inventario')->where('activo', true)
-            ->where('nombre', 'like', $termino)->orderBy('nombre')->limit(15)->get();
+            ->where('nombre', 'like', $termino)->ordenado()->limit(15)->get();
 
         if ($materias->isEmpty() && $productos->isEmpty()) {
             return 'No encontré materias primas ni productos con «'.F::e($texto).'».';
@@ -121,8 +122,8 @@ class TelegramConsultas
             $lineas[] = '';
             $lineas[] = '<b>Producto terminado</b>';
             foreach ($productos as $pt) {
-                $lineas[] = '• '.F::e($pt->nombre).($pt->presentacion ? ' ('.F::e($pt->presentacion).')' : '')
-                    .': '.number_format($pt->stock_disponible(), 0, ',', '.').' u'.($pt->esStockBajo() ? ' ⚠️ bajo' : '');
+                $lineas[] = '• '.F::e($pt->nombreCompleto())
+                    .': '.Paquetes::texto($pt->stock_disponible()).($pt->esStockBajo() ? ' ⚠️ bajo' : '');
             }
         }
 

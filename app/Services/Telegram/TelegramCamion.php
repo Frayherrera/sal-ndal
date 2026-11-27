@@ -85,7 +85,7 @@ class TelegramCamion
         ];
 
         foreach ($vendidos->take(self::MAX_PRODUCTOS) as $d) {
-            $lineas[] = '• '.F::e($d->producto?->nombre).': <b>'.Paquetes::texto($d->vendido).'</b> · '.F::dinero($d->valorVendido());
+            $lineas[] = '• '.F::e($d->producto?->nombreCompleto()).': <b>'.Paquetes::texto($d->vendido).'</b> · '.F::dinero($d->valorVendido());
         }
 
         if ($vendidos->count() > self::MAX_PRODUCTOS) {
@@ -148,7 +148,7 @@ class TelegramCamion
         $productos = $viajes->flatMap->detalles->pluck('producto')->filter()
             ->unique('id')
             ->filter(fn (ProductoTerminado $p) => str_contains(F::normalizar($p->nombre), $termino))
-            ->sortBy('nombre')->values();
+            ->sortBy(fn (ProductoTerminado $p) => $p->nombreCompleto())->values();
 
         if ($productos->isEmpty()) {
             throw new RuntimeException('Ningún producto con «'.F::e($producto).'» salió en el camión en esos viajes.');
@@ -158,7 +158,7 @@ class TelegramCamion
 
         foreach ($productos->take(8) as $p) {
             $lineas[] = '';
-            $lineas[] = '<b>'.F::e($p->nombre).'</b>';
+            $lineas[] = '<b>'.F::e($p->nombreCompleto()).'</b>';
             $total = 0;
 
             foreach ($viajes as $v) {
@@ -211,7 +211,8 @@ class TelegramCamion
         $unidades = array_filter($unidades, fn ($u) => $u > 0);
         arsort($unidades);
 
-        $nombres = ProductoTerminado::whereIn('id', array_keys($unidades))->pluck('nombre', 'id');
+        $nombres = ProductoTerminado::whereIn('id', array_keys($unidades))->get()
+            ->mapWithKeys(fn (ProductoTerminado $p) => [$p->id => $p->nombreCompleto()]);
         $lineas = [];
 
         foreach (array_slice($unidades, 0, self::MAX_PRODUCTOS, true) as $id => $u) {

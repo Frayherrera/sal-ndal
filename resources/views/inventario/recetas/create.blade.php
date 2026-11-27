@@ -36,11 +36,10 @@
                         <label class="block text-sm font-medium text-white/80 mb-2">Producto terminado *</label>
                         <select name="producto_terminado_id" class="input-glass bg-gray-900/60" required>
                             <option value="">Seleccionar producto...</option>
-                            @foreach ($productos as $producto)
-                                <option value="{{ $producto->id }}" @selected(old('producto_terminado_id') == $producto->id)>
-                                    {{ $producto->nombre }} ({{ $producto->codigo }}) — {{ $producto->peso_neto }} g
-                                </option>
-                            @endforeach
+                            @include('inventario._opciones-presentaciones', [
+                                'presentaciones' => $productos,
+                                'seleccionado' => old('producto_terminado_id'),
+                            ])
                         </select>
                     </div>
 

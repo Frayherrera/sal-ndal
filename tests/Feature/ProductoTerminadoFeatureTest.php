@@ -36,49 +36,46 @@ class ProductoTerminadoFeatureTest extends TestCase
     {
         $this->actingAs($this->user)
             ->post('/inventario/productos-terminados', [
-                'nombre' => 'Orégano 50g',
-                'presentacion' => 'bolsa',
-                'peso_neto' => 50,
-                'precio_venta' => 5000,
-                'stock_minimo' => 20,
+                'nombre' => 'Orégano',
+                'presentaciones' => [
+                    ['categoria' => 'ESP', 'peso_neto' => 50, 'precio_venta' => 5000, 'stock_minimo' => 20, 'activo' => 1],
+                ],
             ])
-            ->assertRedirect(route('inventario.productos-terminados.index'));
+            ->assertRedirect();
 
-        $this->assertDatabaseHas('producto_terminados', ['nombre' => 'Orégano 50g']);
-        $this->assertDatabaseHas('inventario_producto_terminado', [
-            'producto_terminado_id' => ProductoTerminado::where('nombre', 'Orégano 50g')->first()->id,
-            'disponible' => 0,
-        ]);
+        $pt = ProductoTerminado::where('nombre', 'Orégano')->firstOrFail();
+        $this->assertDatabaseHas('productos', ['id' => $pt->producto_id, 'nombre' => 'Orégano']);
+        $this->assertDatabaseHas('inventario_producto_terminado', ['producto_terminado_id' => $pt->id, 'disponible' => 0]);
     }
 
     #[Test]
     public function actualiza_producto_terminado(): void
     {
-        $producto = ProductoTerminado::factory()->create(['precio_venta' => 1000]);
+        $pt = ProductoTerminado::factory()->create(['precio_venta' => 1000, 'categoria' => 'ESP']);
 
         $this->actingAs($this->user)
-            ->put("/inventario/productos-terminados/{$producto->id}", [
-                'nombre' => $producto->nombre,
-                'presentacion' => $producto->presentacion,
-                'peso_neto' => 100,
-                'precio_venta' => 12000,
-                'stock_minimo' => 15,
+            ->put("/inventario/productos-terminados/{$pt->producto_id}", [
+                'nombre' => $pt->nombre,
                 'activo' => 1,
+                'presentaciones' => [
+                    ['id' => $pt->id, 'categoria' => 'ESP', 'peso_neto' => 100, 'precio_venta' => 12000, 'stock_minimo' => 15, 'activo' => 1],
+                ],
             ])
-            ->assertRedirect(route('inventario.productos-terminados.index'));
+            ->assertRedirect(route('inventario.productos-terminados.show', $pt->producto_id));
 
-        $this->assertDatabaseHas('producto_terminados', ['id' => $producto->id, 'precio_venta' => 12000]);
+        $this->assertDatabaseHas('producto_terminados', ['id' => $pt->id, 'precio_venta' => 12000]);
     }
 
     #[Test]
     public function toggle_activo_producto(): void
     {
-        $producto = ProductoTerminado::factory()->create(['activo' => true]);
+        $pt = ProductoTerminado::factory()->create(['activo' => true]);
 
         $this->actingAs($this->user)
-            ->post("/inventario/productos-terminados/{$producto->id}/toggle")
+            ->post("/inventario/productos-terminados/{$pt->producto_id}/toggle")
             ->assertRedirect();
 
-        $this->assertDatabaseHas('producto_terminados', ['id' => $producto->id, 'activo' => false]);
+        $this->assertDatabaseHas('productos', ['id' => $pt->producto_id, 'activo' => false]);
+        $this->assertDatabaseHas('producto_terminados', ['id' => $pt->id, 'activo' => false]);
     }
 }

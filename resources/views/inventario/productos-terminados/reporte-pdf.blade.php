@@ -1,17 +1,12 @@
 @extends('reportes.pdf.layout')
 
 @php
-    use App\Services\ReporteInventarioService;
+    use App\Models\ProductoTerminado;
     use App\Support\Paquetes;
 
     $p = fn ($u) => Paquetes::texto((int) $u);
-    $colorEstado = [
-        'agotado' => ['#fee2e2', '#991b1b'],
-        'bajo' => ['#fef3c7', '#92400e'],
-        'ok' => ['#dcfce7', '#166534'],
-    ];
-    // Encabezados de grupo y subtotales solo si hay categorías reales
-    $mostrarGrupos = count($grupos) > 1 || ($grupos[0]['categoria'] ?? '') !== 'Sin categoría';
+    $colorTexto = ['agotado' => '#b91c1c', 'bajo' => '#b45309', 'ok' => '#111827'];
+    $peso = fn ($g) => rtrim(rtrim(number_format((float) $g, 2, ',', '.'), '0'), ',').' g';
 @endphp
 
 @section('contenido')
@@ -23,110 +18,93 @@
                 <div class="kpi principal">
                     <div class="etq">Total producto</div>
                     <div class="val">{{ $p($kpis['total']) }}</div>
-                    <div class="sub">{{ $kpis['articulos'] }} productos · bodega + camión</div>
+                    <div class="sub">{{ $kpis['productos'] }} productos · {{ $kpis['articulos'] }} presentaciones</div>
                 </div>
             </td>
+            @foreach (ProductoTerminado::LINEAS as $linea => $etiqueta)
+                <td>
+                    <div class="kpi">
+                        <div class="etq">{{ $etiqueta }}</div>
+                        <div class="val">{{ $p($kpis['por_linea'][$linea] ?? 0) }}</div>
+                        <div class="sub">bodega + camión</div>
+                    </div>
+                </td>
+            @endforeach
             <td>
                 <div class="kpi">
-                    <div class="etq">En bodega</div>
-                    <div class="val">{{ $p($kpis['bodega']) }}</div>
-                    <div class="sub">disponible para surtir</div>
-                </div>
-            </td>
-            <td>
-                <div class="kpi">
-                    <div class="etq">En el camión</div>
-                    <div class="val">{{ $p($kpis['camion']) }}</div>
-                    <div class="sub">{{ $kpis['camion'] > 0 ? 'cargado o de regreso' : 'camión vacío' }}</div>
-                </div>
-            </td>
-            <td>
-                <div class="kpi">
-                    <div class="etq">Bajo mínimo / agotados</div>
+                    <div class="etq">Bajo mínimo / agotadas</div>
                     <div class="val"><span class="ambar">{{ $kpis['bajos'] }}</span> / <span class="rojo">{{ $kpis['agotados'] }}</span></div>
-                    <div class="sub">según el stock de bodega</div>
+                    <div class="sub">en el camión: {{ $p($kpis['camion']) }}</div>
                 </div>
             </td>
         </tr>
     </table>
 
-    @include('reportes.pdf._estados', ['kpis' => $kpis, 'nombre' => 'productos'])
+    @include('reportes.pdf._estados', ['kpis' => $kpis, 'nombre' => 'presentaciones'])
 
-    {{-- Inventario por categoría --}}
+    {{-- Inventario por producto --}}
     <h2>Inventario actual</h2>
-    @if ($grupos === [])
+    @if ($filas === [])
         <div class="vacio">No hay productos registrados.</div>
     @else
         <table class="tabla">
             <thead>
                 <tr>
-                    <th style="width: 58px;">Código</th>
                     <th>Producto</th>
-                    <th class="right" style="width: 66px;">Bodega</th>
+                    @foreach (ProductoTerminado::LINEAS as $etiqueta)
+                        <th class="right" style="width: 128px;">{{ $etiqueta }}</th>
+                    @endforeach
                     <th class="right" style="width: 62px;">Camión</th>
-                    <th class="right" style="width: 66px;">Total</th>
-                    <th class="right" style="width: 56px;">Mínimo</th>
-                    <th class="center" style="width: 60px;">Estado</th>
+                    <th class="right" style="width: 70px;">Total</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($grupos as $grupo)
-                    @if ($mostrarGrupos)
+                @foreach ($filas as $fila)
                     <tr>
-                        <td colspan="7" style="background: #eef2ff; color: #3730a3; font-weight: bold; padding-top: 7px;">
-                            {{ $grupo['categoria'] }}
-                            <span class="muted" style="font-weight: normal;">
-                                · {{ count($grupo['filas']) }} productos
-                                @if ($grupo['agotados']) · <span class="rojo">{{ $grupo['agotados'] }} agotados</span>@endif
-                                @if ($grupo['bajos']) · <span class="ambar">{{ $grupo['bajos'] }} bajo mínimo</span>@endif
-                            </span>
+                        <td>
+                            {{ $fila['nombre'] }}
+                            @if (! $fila['activo'])<span class="muted"> · inactivo</span>@endif
                         </td>
-                    </tr>
-                    @endif
-                    @foreach ($grupo['filas'] as $f)
-                        @php [$fondo, $texto] = $colorEstado[$f['estado']]; @endphp
-                        <tr>
-                            <td class="num nowrap">{{ $f['codigo'] }}</td>
-                            <td>
-                                {{ $f['nombre'] }}
-                                @if ($f['presentacion'])<span class="muted"> · {{ $f['presentacion'] }}</span>@endif
-                                @if (! $f['activo'])<span class="muted"> · inactivo</span>@endif
+                        @foreach (array_keys(ProductoTerminado::LINEAS) as $linea)
+                            @php $deLinea = $fila['lineas'][$linea]['presentaciones']; @endphp
+                            <td class="right nowrap">
+                                @forelse ($deLinea as $pr)
+                                    <div style="color: {{ $colorTexto[$pr['estado']] }};">
+                                        @if (count($deLinea) > 1)<span class="muted">{{ $peso($pr['peso']) }}:</span>@endif
+                                        {{ $p($pr['total']) }}
+                                        @if ($pr['estado'] !== 'ok')
+                                            <span style="font-size: 6.5px;">{{ $pr['estado'] === 'agotado' ? '● agotada' : '● bajo' }}</span>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <span class="muted">—</span>
+                                @endforelse
                             </td>
-                            <td class="right nowrap {{ $f['estado'] === 'agotado' ? 'rojo' : '' }}">{{ $p($f['bodega']) }}</td>
-                            <td class="right nowrap {{ $f['camion'] > 0 ? '' : 'muted' }}">{{ $f['camion'] > 0 ? $p($f['camion']) : '—' }}</td>
-                            <td class="right nowrap"><b>{{ $p($f['total']) }}</b></td>
-                            <td class="right nowrap muted">{{ $f['minimo'] > 0 ? $p($f['minimo']) : '—' }}</td>
-                            <td class="center"><span class="badge" style="background: {{ $fondo }}; color: {{ $texto }};">{{ ReporteInventarioService::ESTADOS[$f['estado']] }}</span></td>
-                        </tr>
-                    @endforeach
-                    @if ($mostrarGrupos)
-                    <tr>
-                        <td colspan="2" class="right muted" style="font-size: 7.5px;">Subtotal {{ $grupo['categoria'] }}</td>
-                        <td class="right nowrap" style="font-weight: bold;">{{ $p($grupo['subtotal']['bodega']) }}</td>
-                        <td class="right nowrap" style="font-weight: bold;">{{ $p($grupo['subtotal']['camion']) }}</td>
-                        <td class="right nowrap" style="font-weight: bold;">{{ $p($grupo['subtotal']['total']) }}</td>
-                        <td colspan="2"></td>
+                        @endforeach
+                        <td class="right nowrap {{ $fila['camion'] > 0 ? '' : 'muted' }}">{{ $fila['camion'] > 0 ? $p($fila['camion']) : '—' }}</td>
+                        <td class="right nowrap"><b>{{ $p($fila['total']) }}</b></td>
                     </tr>
-                    @endif
                 @endforeach
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="2">Total ({{ $kpis['articulos'] }} productos)</td>
-                    <td class="right nowrap">{{ $p($kpis['bodega']) }}</td>
+                    <td>Total ({{ $kpis['productos'] }} productos)</td>
+                    @foreach (array_keys(ProductoTerminado::LINEAS) as $linea)
+                        <td class="right nowrap">{{ $p($kpis['por_linea'][$linea] ?? 0) }}</td>
+                    @endforeach
                     <td class="right nowrap">{{ $p($kpis['camion']) }}</td>
                     <td class="right nowrap">{{ $p($kpis['total']) }}</td>
-                    <td colspan="2"></td>
                 </tr>
             </tfoot>
         </table>
     @endif
 
     <div class="filtros" style="margin-top: 6px;">
-        Cantidades en paquetes de {{ Paquetes::UNIDADES }} (p) y unidades sueltas (u).
-        El estado se calcula con el stock de bodega.
+        Cantidades en paquetes de {{ Paquetes::UNIDADES }} (p) y unidades sueltas (u); cada columna suma bodega + camión.
+        El estado de cada presentación se calcula con el stock de bodega
+        (<span style="color: #b45309;">● bajo</span> mínimo, <span style="color: #b91c1c;">● agotada</span>).
         @if ($kpis['inactivos'] > 0)
-            Se incluyen {{ $kpis['inactivos'] }} productos inactivos porque todavía tienen stock.
+            Se incluyen {{ $kpis['inactivos'] }} presentaciones inactivas porque todavía tienen stock.
         @endif
     </div>
 @endsection

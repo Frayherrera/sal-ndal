@@ -39,7 +39,7 @@ class MovimientoInventarioController extends Controller
         // Los tipos del camión solo los genera el módulo Camión
         $tipos = array_diff_key(MovimientoInventario::TIPOS, array_flip(MovimientoInventario::TIPOS_AUTOMATICOS));
         $materiasPrimas = MateriaPrima::where('activo', true)->orderBy('nombre')->get();
-        $productos = ProductoTerminado::where('activo', true)->orderBy('nombre')->get();
+        $productos = ProductoTerminado::where('activo', true)->ordenado()->get();
 
         // Modo edición por pre-selección de tipo
         $preseleccion = $request->get('tipo', 'compra_recepcion');

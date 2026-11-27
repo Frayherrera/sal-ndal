@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Receta: ' . $producto->nombre)
+@section('title', 'Editar Receta: ' . $producto->nombreCompleto())
 
 @section('content')
     <div class="max-w-3xl mx-auto animate-fade-in">
@@ -8,7 +8,7 @@
             <a href="{{ route('inventario.recetas.index') }}" class="text-white/60 hover:text-white transition-colors">
                 <i class="fas fa-arrow-left"></i>
             </a>
-            <h1 class="text-2xl font-bold text-white">Receta: {{ $producto->nombre }}</h1>
+            <h1 class="text-2xl font-bold text-white">Receta: {{ $producto->nombreCompleto() }}</h1>
         </div>
 
         <div class="glass rounded-2xl p-8">

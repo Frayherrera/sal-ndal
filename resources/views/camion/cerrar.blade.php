@@ -53,24 +53,31 @@
                         </tr>
                     </thead>
                     <tbody>
+                        @php $grupoAnterior = null; @endphp
                         @foreach ($detalles as $detalle)
                             @php
                                 $pid = $detalle->producto_terminado_id;
                                 $old = old("lineas.{$pid}", []);
+                                $nombreProducto = $detalle->producto?->nombre ?? 'N/D';
                             @endphp
+                            @if ($nombreProducto !== $grupoAnterior)
+                                <tr>
+                                    <td colspan="6" class="px-3 pt-4 pb-1 text-white font-semibold">{{ $nombreProducto }}</td>
+                                </tr>
+                                @php $grupoAnterior = $nombreProducto; @endphp
+                            @endif
                             <tr class="border-b border-white/5 fila-cierre" data-cargado="{{ $detalle->cargado }}">
                                 <td class="p-3">
-                                    <div class="text-white font-medium">{{ $detalle->producto?->nombre }}</div>
-                                    <div class="text-xs text-white/40">{{ $detalle->producto?->presentacion }}</div>
+                                    <div class="text-white/90 pl-3">{{ $detalle->producto?->etiqueta() }}</div>
                                 </td>
                                 <td class="p-3 text-right text-white/80 whitespace-nowrap">{{ Paquetes::texto($detalle->cargado) }}</td>
                                 @foreach (['regresado' => 'Regresó', 'danado' => 'Dañado', 'regalado' => 'Regalado'] as $campo => $etiqueta)
                                     <td class="p-3">
                                         <div class="flex gap-1">
                                             <input type="number" min="0" step="1" name="lineas[{{ $pid }}][{{ $campo }}_p]" value="{{ $old[$campo.'_p'] ?? '' }}"
-                                                   class="input-glass w-[4.5rem] text-right cant {{ $campo }}-p" placeholder="0" aria-label="{{ $etiqueta }} paquetes de {{ $detalle->producto?->nombre }}">
+                                                   class="input-glass w-[4.5rem] text-right cant {{ $campo }}-p" placeholder="0" aria-label="{{ $etiqueta }} paquetes de {{ $detalle->producto?->nombreCompleto() }}">
                                             <input type="number" min="0" step="1" name="lineas[{{ $pid }}][{{ $campo }}_u]" value="{{ $old[$campo.'_u'] ?? '' }}"
-                                                   class="input-glass w-14 text-right cant {{ $campo }}-u" placeholder="u" aria-label="{{ $etiqueta }} unidades sueltas de {{ $detalle->producto?->nombre }}">
+                                                   class="input-glass w-14 text-right cant {{ $campo }}-u" placeholder="u" aria-label="{{ $etiqueta }} unidades sueltas de {{ $detalle->producto?->nombreCompleto() }}">
                                         </div>
                                     </td>
                                 @endforeach

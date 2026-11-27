@@ -235,7 +235,7 @@ class ViajeCamionService
             $vendido = $detalle->cargado - $regresado - $danado - $regalado;
 
             if ($vendido < 0) {
-                throw new RuntimeException("En \"{$detalle->producto?->nombre}\" lo que regresó, se dañó o se regaló ("
+                throw new RuntimeException("En \"{$detalle->producto?->nombreCompleto()}\" lo que regresó, se dañó o se regaló ("
                     .Paquetes::texto($regresado + $danado + $regalado).') supera lo que salió ('.Paquetes::texto($detalle->cargado).').');
             }
 

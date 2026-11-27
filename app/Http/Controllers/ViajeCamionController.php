@@ -51,7 +51,7 @@ class ViajeCamionController extends Controller
 
         $productos = ProductoTerminado::with('inventario')
             ->where(fn ($q) => $q->where('activo', true)->orWhereIn('id', array_keys($enCamion)))
-            ->orderBy('nombre')
+            ->ordenado()
             ->get()
             ->map(fn (ProductoTerminado $p) => [
                 'producto' => $p,
@@ -107,7 +107,7 @@ class ViajeCamionController extends Controller
 
         return view('camion.show', [
             'viaje' => $viaje,
-            'detalles' => $viaje->detalles->sortBy(fn ($d) => $d->producto?->nombre)->values(),
+            'detalles' => $viaje->detalles->sortBy(fn ($d) => $d->producto?->nombreCompleto())->values(),
             'resultado' => $viaje->estaCerrado() ? $this->service->resultado($viaje) : null,
         ]);
     }
@@ -122,7 +122,7 @@ class ViajeCamionController extends Controller
 
         return view('camion.cerrar', [
             'viaje' => $viaje,
-            'detalles' => $viaje->detalles->sortBy(fn ($d) => $d->producto?->nombre)->values(),
+            'detalles' => $viaje->detalles->sortBy(fn ($d) => $d->producto?->nombreCompleto())->values(),
         ]);
     }
 

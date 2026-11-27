@@ -17,7 +17,7 @@ class RecetaController extends Controller
     public function index(): View
     {
         $productos = ProductoTerminado::with('receta')
-            ->orderBy('nombre')
+            ->ordenado()
             ->get();
 
         return view('inventario.recetas.index', compact('productos'));
@@ -28,7 +28,7 @@ class RecetaController extends Controller
         // Solo productos sin receta (y activos) pueden crear una receta nueva.
         $productos = ProductoTerminado::where('activo', true)
             ->whereDoesntHave('receta')
-            ->orderBy('nombre')
+            ->ordenado()
             ->get();
         $materiasPrimas = MateriaPrima::where('activo', true)->orderBy('nombre')->get();
 

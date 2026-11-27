@@ -58,7 +58,7 @@ class TelegramCamionTest extends TestCase
 
     private function producto(string $nombre): ProductoTerminado
     {
-        $pt = ProductoTerminado::factory()->create(['nombre' => $nombre, 'precio_venta' => 24000, 'activo' => true]);
+        $pt = ProductoTerminado::factory()->create(['nombre' => $nombre, 'categoria' => 'ESP', 'peso_neto' => 20, 'precio_venta' => 24000, 'activo' => true]);
         InventarioProductoTerminado::create(['producto_terminado_id' => $pt->id, 'disponible' => 2000, 'comprometido' => 0]);
 
         return $pt;
@@ -105,7 +105,7 @@ class TelegramCamionTest extends TestCase
         $this->enviarTexto('/camion');
         $texto = $this->ultimaRespuesta();
         $this->assertStringContainsString('El camión está en casa', $texto);
-        $this->assertStringContainsString('Comino molido: 4 p', $texto);
+        $this->assertStringContainsString('Comino molido · Especial 20 g: 4 p', $texto);
         $this->assertStringContainsString('Siguiente ruta en la rotación: <b>Pelaya</b>', $texto);
 
         app(ViajeCamionService::class)->cargar(['ruta_id' => $pelaya->id, 'lineas' => [$comino->id => ['surtido' => 100]]]);
@@ -114,7 +114,7 @@ class TelegramCamionTest extends TestCase
         $texto = $this->ultimaRespuesta();
         $this->assertStringContainsString('El camión está en ruta', $texto);
         $this->assertStringContainsString('VJE-00003', $texto);
-        $this->assertStringContainsString('Comino molido: 9 p', $texto); // 80 + 100 = 180 u
+        $this->assertStringContainsString('Comino molido · Especial 20 g: 9 p', $texto); // 80 + 100 = 180 u
     }
 
     #[Test]
@@ -128,14 +128,14 @@ class TelegramCamionTest extends TestCase
         $this->enviarTexto('/vendido');
         $texto = $this->ultimaRespuesta();
         $this->assertStringContainsString('Vendido en VJE-00002', $texto);
-        $this->assertStringContainsString('Comino molido: <b>15 p</b> · $360.000', $texto);
+        $this->assertStringContainsString('Comino molido · Especial 20 g: <b>15 p</b> · $360.000', $texto);
         $this->assertStringNotContainsString('Canela en polvo:', $texto); // no se vendió canela
 
         $this->enviarTexto('/vendido 1');
         $texto = $this->ultimaRespuesta();
         $this->assertStringContainsString('Vendido en VJE-00001', $texto);
-        $this->assertStringContainsString('Comino molido: <b>20 p</b>', $texto);
-        $this->assertStringContainsString('Canela en polvo: <b>6 p</b>', $texto);
+        $this->assertStringContainsString('Comino molido · Especial 20 g: <b>20 p</b>', $texto);
+        $this->assertStringContainsString('Canela en polvo · Especial 20 g: <b>6 p</b>', $texto);
         $this->assertStringContainsString('1 p dañado', $texto);
 
         $this->enviarTexto('/vendido VJE-00099');
@@ -155,7 +155,7 @@ class TelegramCamionTest extends TestCase
 
         $this->enviarTexto('/semanas comino');
         $texto = $this->ultimaRespuesta();
-        $this->assertStringContainsString('<b>Comino molido</b>', $texto);
+        $this->assertStringContainsString('<b>Comino molido · Especial 20 g</b>', $texto);
         $this->assertStringContainsString('Pelaya: 20 p', $texto);
         $this->assertStringContainsString('La Gloria: 15 p', $texto);
         $this->assertStringContainsString('Total: <b>35 p</b>', $texto);

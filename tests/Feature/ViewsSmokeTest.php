@@ -87,8 +87,8 @@ class ViewsSmokeTest extends TestCase
 
         $this->actingAs($this->user)->get('/inventario/productos-terminados')->assertOk();
         $this->actingAs($this->user)->get('/inventario/productos-terminados/create')->assertOk();
-        $this->actingAs($this->user)->get("/inventario/productos-terminados/{$pt->id}")->assertOk();
-        $this->actingAs($this->user)->get("/inventario/productos-terminados/{$pt->id}/edit")->assertOk();
+        $this->actingAs($this->user)->get("/inventario/productos-terminados/{$pt->producto_id}")->assertOk();
+        $this->actingAs($this->user)->get("/inventario/productos-terminados/{$pt->producto_id}/edit")->assertOk();
     }
 
     #[Test]
@@ -216,7 +216,7 @@ class ViewsSmokeTest extends TestCase
         $this->actingAs($this->user)->get('/inventario/produccion/crear')->assertOk();
 
         $this->actingAs($this->user)
-            ->get("/inventario/productos-terminados/{$pt->id}")
+            ->get("/inventario/productos-terminados/{$pt->producto_id}")
             ->assertOk()
             ->assertSee('Receta');
     }
