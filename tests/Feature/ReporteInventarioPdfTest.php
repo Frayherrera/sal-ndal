@@ -138,6 +138,15 @@ class ReporteInventarioPdfTest extends TestCase
     }
 
     #[Test]
+    public function el_listado_y_el_detalle_muestran_el_stock_en_paquetes(): void
+    {
+        $pt = $this->producto('COMINO', 245);
+
+        $this->get('/inventario/productos-terminados')->assertOk()->assertSee('12 p + 5 u')->assertSee('245 u');
+        $this->get("/inventario/productos-terminados/{$pt->id}")->assertOk()->assertSee('12 p + 5 u');
+    }
+
+    #[Test]
     public function la_ruta_del_reporte_no_choca_con_el_detalle_del_articulo(): void
     {
         $mp = $this->materia('COMINO', 1000, 0);

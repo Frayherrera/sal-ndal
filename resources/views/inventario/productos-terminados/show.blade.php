@@ -23,8 +23,8 @@
             <div class="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center mb-3">
                 <i class="fas fa-box text-blue-400"></i>
             </div>
-            <div class="text-2xl font-bold text-white">{{ number_format($producto->stock_disponible()) }}</div>
-            <div class="text-xs text-white/50 mt-1">Disponibles (u)</div>
+            <div class="text-2xl font-bold text-white">{{ \App\Support\Paquetes::texto($producto->stock_disponible()) }}</div>
+            <div class="text-xs text-white/50 mt-1">Disponibles · {{ number_format($producto->stock_disponible(), 0, ',', '.') }} u</div>
         </div>
 
         <div class="glass-card rounded-2xl p-5">
@@ -50,7 +50,7 @@
             <div class="text-xl font-bold {{ $producto->esStockBajo() ? 'text-yellow-300' : 'text-green-300' }}">
                 {{ $producto->esStockBajo() ? 'Bajo' : 'OK' }}
             </div>
-            <div class="text-xs text-white/50 mt-1">Mínimo: {{ number_format($producto->stock_minimo, 0) }} u</div>
+            <div class="text-xs text-white/50 mt-1">Mínimo: {{ \App\Support\Paquetes::texto((int) $producto->stock_minimo) }}</div>
         </div>
     </div>
 

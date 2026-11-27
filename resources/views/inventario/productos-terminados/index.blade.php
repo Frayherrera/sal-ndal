@@ -68,7 +68,8 @@
                             <td class="p-4 text-white/60 capitalize hidden md:table-cell">{{ $pt->presentacion ?? '—' }}</td>
                             <td class="p-4 text-right text-white/60 hidden md:table-cell">{{ number_format($pt->peso_neto, 0) }} g</td>
                             <td class="p-4 text-right">
-                                <span class="text-white font-semibold">{{ number_format($pt->stock_disponible()) }} u</span>
+                                <span class="text-white font-semibold whitespace-nowrap">{{ \App\Support\Paquetes::texto($pt->stock_disponible()) }}</span>
+                                <span class="block text-xs text-white/40 mt-0.5">{{ number_format($pt->stock_disponible(), 0, ',', '.') }} u</span>
                                 @if ($pt->esStockBajo())
                                     <span class="block text-xs text-yellow-400 mt-0.5">Bajo</span>
                                 @endif
