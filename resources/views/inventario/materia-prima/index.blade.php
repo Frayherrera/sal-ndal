@@ -122,7 +122,7 @@
                                                 <i class="fas fa-edit w-4 text-center text-purple-300"></i>
                                                 Editar
                                             </a>
-                                            @if (!$mp->movimientos()->exists())
+                                            @unless ($mp->movimientos_exists)
                                                 <div class="border-t border-white/10">
                                                     <form method="POST" action="{{ route('inventario.materia-prima.destroy', $mp) }}"
                                                           onsubmit="return confirm('¿Eliminar esta materia prima?')">
@@ -135,7 +135,7 @@
                                                         </button>
                                                     </form>
                                                 </div>
-                                            @endif
+                                            @endunless
                                         </div>
                                     </div>
                                 </td>

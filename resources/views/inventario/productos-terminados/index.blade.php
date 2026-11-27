@@ -118,7 +118,7 @@
                                             <i class="fas fa-edit w-4 text-center text-purple-300"></i>
                                             Editar
                                         </a>
-                                        @unless ($producto->presentaciones->contains(fn ($pt) => $pt->stock_disponible() !== 0 || $pt->movimientos()->exists()))
+                                        @unless ($producto->presentaciones->contains(fn ($pt) => $pt->stock_disponible() !== 0 || $pt->movimientos_exists))
                                             <div class="border-t border-white/10">
                                                 <form method="POST" action="{{ route('inventario.productos-terminados.destroy', $producto) }}"
                                                       onsubmit="return confirm('¿Eliminar este producto y sus presentaciones?')">

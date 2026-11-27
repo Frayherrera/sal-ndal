@@ -17,8 +17,14 @@ mkdir -p storage bootstrap/cache
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
-# 3) Limpiar cachés de Laravel
-echo "[entrypoint] Limpiando cachés de Laravel..."
+# 3) Cachés de Laravel
+#    En producción se cachean config, rutas, vistas y eventos (menos trabajo por petición).
+#    En desarrollo se limpian para ver los cambios al instante.
+ENTORNO="${APP_ENV:-$(grep -E '^APP_ENV=' .env 2>/dev/null | cut -d= -f2 | tr -d '\r"')}"
 php artisan optimize:clear || true
+if [ "$ENTORNO" = "production" ]; then
+    echo "[entrypoint] Producción: cacheando config, rutas, vistas y eventos..."
+    php artisan optimize || echo "[entrypoint] Aviso: no se pudo cachear; sigue sin caché"
+fi
 
 exec docker-php-entrypoint "$@"

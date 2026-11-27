@@ -24,7 +24,7 @@ class ProductoTerminadoController extends Controller
 
     public function index(): View
     {
-        $productos = Producto::with('presentaciones.inventario')->orderBy('nombre')->get();
+        $productos = Producto::with(['presentaciones' => fn ($q) => $q->withExists('movimientos'), 'presentaciones.inventario'])->orderBy('nombre')->get();
 
         if (request('sort') === 'stock') {
             $productos = $productos->sortBy(fn (Producto $p) => $p->stock(), SORT_REGULAR, request('dir') !== 'asc')->values();

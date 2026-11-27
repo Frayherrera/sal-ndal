@@ -118,7 +118,12 @@ class ProductoTerminado extends Model
      */
     public function gramosPorUnidad(): int
     {
-        return (int) round($this->receta()->sum('gramos_por_unidad'));
+        // Usa la receta precargada si existe (evita una consulta por fila en los listados)
+        $total = $this->relationLoaded('receta')
+            ? $this->receta->sum('gramos_por_unidad')
+            : $this->receta()->sum('gramos_por_unidad');
+
+        return (int) round((float) $total);
     }
 
     public function stock_disponible(): int

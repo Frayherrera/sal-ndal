@@ -1,0 +1,7 @@
+/*
+ * Tailwind 3.4 compilado (misma versión que servía cdn.tailwindcss.com).
+ * Se genera con `npm run build:css` → public/css/tailwind.css.
+ */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

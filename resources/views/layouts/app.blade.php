@@ -8,10 +8,7 @@
     <title>@yield('title', 'Santiny') — {{ config('app.name', 'Santiny') }}</title>
     <meta name="theme-color" content="#4A90E2">
     <link rel="manifest" href="/manifest.json">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,600,700&display=swap" rel="stylesheet" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    @include('partials.estilos-base')
     @include('partials.theme')
     <style>
         html { scroll-behavior: smooth; }
@@ -33,6 +30,12 @@
             background: rgba(255, 255, 255, 0.06);
             backdrop-filter: blur(8px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        /* En celulares el desenfoque de fondo es caro al hacer scroll: se reduce en
+           los paneles y se quita en las tarjetas (el fondo es un degradado suave). */
+        @media (max-width: 768px) {
+            .glass { backdrop-filter: blur(6px); }
+            .glass-card { backdrop-filter: none; }
         }
         .input-glass {
             width: 100%;

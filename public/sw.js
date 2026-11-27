@@ -1,9 +1,10 @@
-const CACHE_NAME = 'santini-v1.1.0';
+const CACHE_NAME = 'santini-v1.2.0';
 
-// Núcleo de la app: instalable y funcional sin conexión
+// Núcleo de la app: instalable y con respaldo sin conexión
 const cacheAssets = [
     '/manifest.json',
     '/favicon.ico',
+    '/css/tailwind.css',
     '/pwa/icons/android/launchericon-192x192.png',
     '/pwa/icons/android/launchericon-512x512.png',
     '/pwa/icons/ios/192.png',
@@ -36,47 +37,66 @@ const isNavigate = request =>
     (request.method === 'GET' && request.destination === 'document');
 
 const isAsset = request =>
-    request.method === 'GET' &&
-    (request.destination === 'script' ||
-     request.destination === 'style' ||
-     request.destination === 'image' ||
-     request.destination === 'font' ||
-     request.destination === 'manifest');
+    request.destination === 'script' ||
+    request.destination === 'style' ||
+    request.destination === 'image' ||
+    request.destination === 'font' ||
+    request.destination === 'manifest';
+
+// Descargas (PDF, CSV) y recibos: nunca se guardan
+const noCachear = url =>
+    /\/(exportar|exportar-pdf|reporte-pdf)(\/|$)/.test(url.pathname) ||
+    /\.(pdf|csv)$/i.test(url.pathname);
+
+const guardar = (request, response) => {
+    if (!response || response.status !== 200 || response.type === 'opaqueredirect') return;
+    const tipo = response.headers.get('content-type') || '';
+    if (/application\/(pdf|octet-stream)|text\/csv/.test(tipo)) return;
+    const copy = response.clone();
+    caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
+};
 
 self.addEventListener('fetch', event => {
-    // Solo responde a GET
-    if (event.request.method !== 'GET') return;
+    const request = event.request;
+    if (request.method !== 'GET') return;
 
-    // Navegacion: red-primero, cache de respaldo offline
-    if (isNavigate(event.request)) {
+    const url = new URL(request.url);
+    if (noCachear(url)) return; // el navegador la maneja directo
+
+    // Páginas: red primero (datos al día); sin conexión, la copia de esa misma URL
+    if (isNavigate(request)) {
         event.respondWith(
-            fetch(event.request)
+            fetch(request)
                 .then(response => {
-                    const copy = response.clone();
-                    caches.open(CACHE_NAME).then(cache => cache.put('/', copy));
+                    // No se guarda la pantalla de login ni redirecciones
+                    if (!response.redirected) guardar(request, response);
                     return response;
                 })
                 .catch(() =>
-                    caches.match(event.request).then(cached => {
-                        const fallback = cached || caches.match('/');
-                        return fallback || caches.match('/manifest.json');
-                    })
+                    caches.match(request).then(cached => cached || caches.match('/gestion'))
                 )
         );
         return;
     }
 
-    // Navegacion dentro de la SPA (rutas suaves): cache,
-    // luego red, revalidando la entrada en cache
-    if (isAsset(event.request)) {
+    // Archivos versionados (/build con hash, ?v=): caché primero, sin revalidar
+    if (isAsset(request) && (url.pathname.startsWith('/build/') || url.searchParams.has('v'))) {
         event.respondWith(
-            caches.match(event.request).then(cached => {
-                const network = fetch(event.request)
+            caches.match(request).then(cached => cached || fetch(request).then(response => {
+                guardar(request, response);
+                return response;
+            }))
+        );
+        return;
+    }
+
+    // Resto de archivos estáticos: caché y revalidación en segundo plano
+    if (isAsset(request)) {
+        event.respondWith(
+            caches.match(request).then(cached => {
+                const network = fetch(request)
                     .then(response => {
-                        if (response && response.status === 200) {
-                            const copy = response.clone();
-                            caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
-                        }
+                        guardar(request, response);
                         return response;
                     })
                     .catch(() => cached);
@@ -86,14 +106,13 @@ self.addEventListener('fetch', event => {
         return;
     }
 
-    // Otros GET: red con cache de respaldo (ej. API, HTML)
+    // Otros GET (datos): red primero, caché solo como respaldo sin conexión
     event.respondWith(
-        caches.match(event.request).then(cached => {
-            return cached || fetch(event.request).then(response => {
-                const copy = response.clone();
-                caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        fetch(request)
+            .then(response => {
+                guardar(request, response);
                 return response;
-            }).catch(() => cached);
-        })
+            })
+            .catch(() => caches.match(request))
     );
 });

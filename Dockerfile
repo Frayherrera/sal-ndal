@@ -40,5 +40,9 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Config Apache
 COPY vhost.conf /etc/apache2/sites-available/000-default.conf
 
+# OPcache con valores para Laravel (PHP compilado en memoria)
+RUN docker-php-ext-enable opcache 2>/dev/null || docker-php-ext-install opcache
+COPY docker/opcache.ini /usr/local/etc/php/conf.d/zz-opcache.ini
+
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]

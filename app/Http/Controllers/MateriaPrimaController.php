@@ -24,7 +24,7 @@ class MateriaPrimaController extends Controller
     public function index(): View
     {
         $direccion = request('dir') === 'asc' ? 'asc' : 'desc';
-        $query = MateriaPrima::with('inventario');
+        $query = MateriaPrima::with('inventario')->withExists('movimientos');
 
         if (request('sort') === 'stock') {
             $query->orderBy(

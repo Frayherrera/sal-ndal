@@ -17,7 +17,7 @@ class ProduccionController extends Controller
     public function create(): View
     {
         $productos = ProductoTerminado::where('activo', true)
-            ->with('receta')
+            ->with('receta.materiaPrima')
             ->ordenado()
             ->get();
 

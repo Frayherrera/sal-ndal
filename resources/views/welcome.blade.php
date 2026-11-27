@@ -13,8 +13,7 @@
     <link rel="manifest" href="/manifest.json">
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,600&display=swap" rel="stylesheet" />
+    @include('partials.estilos-base')
 
     <link rel="apple-touch-icon" sizes="16x16" href="/pwa/icons/ios/16.png">
     <link rel="apple-touch-icon" sizes="20x20" href="/pwa/icons/ios/20.png">
@@ -48,11 +47,7 @@
     <link href="/pwa/icons/ios/256.png" sizes="256x256" rel="apple-touch-startup-image">
     <link href="/pwa/icons/ios/192.png" sizes="192x192" rel="apple-touch-startup-image">
 
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
 
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     <style>
         html {
