@@ -120,6 +120,7 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
     </style>
+    @include('partials.tailwind')
 </head>
 
 <body class="min-h-screen bg-gray-50">

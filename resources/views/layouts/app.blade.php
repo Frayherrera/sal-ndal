@@ -76,6 +76,7 @@
             background: rgba(15, 23, 42, 0.30);
         }
     </style>
+    @include('partials.tailwind')
 </head>
 
 <body class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">

@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Models\InventarioProductoTerminado;
+use App\Models\MovimientoInventario;
 use App\Models\Producto;
 use App\Models\ProductoTerminado;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -113,19 +116,71 @@ class ProductoTerminadoService
             && ! DB::table('detalle_conteo_fisico')->where('producto_terminado_id', $pt->id)->exists();
     }
 
-    /** Elimina un producto completo si ninguna de sus presentaciones tiene historial. */
+    /**
+     * Lo que se borraría al eliminar el producto, para la pantalla de confirmación.
+     *
+     * @return array{movimientos: int, viajes: int, ventas: int, conteos: int, stock: int, en_ruta: ?string, historial: bool}
+     */
+    public function resumenEliminacion(Producto $producto): array
+    {
+        $ids = $producto->presentaciones()->pluck('id');
+
+        $resumen = [
+            'movimientos' => $this->movimientosDe($ids)->count(),
+            'viajes' => DB::table('detalle_viaje_camion')->whereIn('producto_terminado_id', $ids)->distinct()->count('viaje_camion_id'),
+            'ventas' => DB::table('detalle_venta')->whereIn('producto_terminado_id', $ids)->distinct()->count('venta_id'),
+            'conteos' => DB::table('detalle_conteo_fisico')->whereIn('producto_terminado_id', $ids)->count(),
+            'stock' => (int) DB::table('inventario_producto_terminado')->whereIn('producto_terminado_id', $ids)->sum('disponible'),
+            'en_ruta' => $this->viajeEnRuta($ids),
+        ];
+        $resumen['historial'] = $resumen['movimientos'] + $resumen['viajes'] + $resumen['ventas'] + $resumen['conteos'] > 0;
+
+        return $resumen;
+    }
+
+    /**
+     * Borra el producto con todas sus presentaciones y su historial: kardex, receta,
+     * inventario, líneas de viajes del camión, de ventas antiguas y de conteos físicos.
+     * No se puede deshacer. Se bloquea si alguna presentación va en el camión en ruta.
+     */
     public function eliminarProducto(Producto $producto): void
     {
         $presentaciones = $producto->presentaciones()->get();
+        $ids = $presentaciones->pluck('id');
 
-        if ($presentaciones->contains(fn ($pt) => ! $this->puedeEliminarse($pt))) {
-            throw new RuntimeException('No se puede eliminar un producto con movimientos registrados. Desactívelo en su lugar.');
+        if ($viaje = $this->viajeEnRuta($ids)) {
+            throw new RuntimeException("Este producto va cargado en el viaje {$viaje}, que está en ruta. Cierra o anula el viaje antes de eliminarlo.");
         }
 
-        DB::transaction(function () use ($producto, $presentaciones) {
+        DB::transaction(function () use ($producto, $presentaciones, $ids) {
+            $movimientos = $this->movimientosDe($ids)->pluck('id');
+            // Las reversiones apuntan a su movimiento original: se sueltan antes de borrar
+            MovimientoInventario::whereIn('movimiento_original_id', $movimientos)->update(['movimiento_original_id' => null]);
+            MovimientoInventario::whereIn('id', $movimientos)->delete();
+
+            DB::table('detalle_conteo_fisico')->whereIn('producto_terminado_id', $ids)->delete();
+            DB::table('detalle_viaje_camion')->whereIn('producto_terminado_id', $ids)->delete();
+            DB::table('detalle_venta')->whereIn('producto_terminado_id', $ids)->delete();
+
             $presentaciones->each(fn ($pt) => $this->borrar($pt));
             $producto->delete();
         });
+    }
+
+    private function movimientosDe(Collection $ids): Builder
+    {
+        return MovimientoInventario::where('origen_type', (new ProductoTerminado)->getMorphClass())
+            ->whereIn('origen_id', $ids);
+    }
+
+    /** Número del viaje en ruta que lleva alguna de estas presentaciones, o null. */
+    private function viajeEnRuta(Collection $ids): ?string
+    {
+        return DB::table('detalle_viaje_camion')
+            ->join('viajes_camion', 'viajes_camion.id', '=', 'detalle_viaje_camion.viaje_camion_id')
+            ->whereIn('detalle_viaje_camion.producto_terminado_id', $ids)
+            ->where('viajes_camion.estado', 'en_ruta')
+            ->value('viajes_camion.numero');
     }
 
     /** Activa o desactiva el producto y todas sus presentaciones. */

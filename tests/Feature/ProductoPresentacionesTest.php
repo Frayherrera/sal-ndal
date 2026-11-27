@@ -218,4 +218,71 @@ class ProductoPresentacionesTest extends TestCase
         $this->assertNull($producto->fresh());
         $this->assertDatabaseMissing('producto_terminados', ['id' => $b2c->id]);
     }
+
+    #[Test]
+    public function eliminar_borra_el_producto_con_todo_su_historial(): void
+    {
+        $esp = $this->presentacion('NUEZ', 'ESP', 10, 100);
+        $b2c = $this->presentacion('NUEZ', 'B2C', 5, 0);
+        $otro = $this->presentacion('CLAVO', 'ESP', 6, 100);
+        $producto = $esp->producto;
+        $mp = \App\Models\MateriaPrima::factory()->create();
+        $esp->receta()->create(['materia_prima_id' => $mp->id, 'gramos_por_unidad' => 10]);
+
+        // Historial: ajuste anulado (con reversión), viaje cerrado y conteo
+        $movimientos = app(MovimientoInventarioService::class);
+        $ajuste = $movimientos->registrar(['origen' => $esp, 'tipo' => 'ajuste_positivo', 'cantidad' => 20, 'motivo' => 'prueba']);
+        $movimientos->anular($ajuste, 'error');
+        $camion = app(\App\Services\ViajeCamionService::class);
+        $viaje = $camion->cargar(['ruta_id' => Ruta::factory()->create()->id, 'lineas' => [$esp->id => ['surtido' => 40], $otro->id => ['surtido' => 20]]]);
+        $camion->cerrar($viaje, ['lineas' => [$esp->id => ['regresado' => 0], $otro->id => ['regresado' => 0]]]);
+
+        $this->get("/inventario/productos-terminados/{$producto->id}/eliminar")->assertOk()
+            ->assertSee('Se borrará todo el historial')
+            ->assertSee('movimientos del kardex')
+            ->assertSee('1 viaje del camión');
+
+        // Sin la casilla no borra nada
+        $this->delete("/inventario/productos-terminados/{$producto->id}")->assertSessionHasErrors('confirmar');
+        $this->assertNotNull($producto->fresh());
+
+        $this->delete("/inventario/productos-terminados/{$producto->id}", ['confirmar' => 1])
+            ->assertRedirect(route('inventario.productos-terminados.index'));
+
+        $this->assertNull($producto->fresh());
+        $this->assertDatabaseMissing('producto_terminados', ['id' => $esp->id]);
+        $this->assertDatabaseMissing('producto_terminados', ['id' => $b2c->id]);
+        $this->assertSame(0, \App\Models\MovimientoInventario::where('origen_type', ProductoTerminado::class)->whereIn('origen_id', [$esp->id, $b2c->id])->count());
+        $this->assertDatabaseMissing('detalle_viaje_camion', ['producto_terminado_id' => $esp->id]);
+        $this->assertDatabaseMissing('detalle_receta', ['producto_terminado_id' => $esp->id]);
+
+        // Lo de los demás productos queda intacto
+        $this->assertDatabaseHas('detalle_viaje_camion', ['producto_terminado_id' => $otro->id, 'viaje_camion_id' => $viaje->id]);
+        $this->assertSame(80, $otro->fresh()->stock_disponible());
+    }
+
+    #[Test]
+    public function no_elimina_un_producto_cargado_en_el_camion_en_ruta(): void
+    {
+        $esp = $this->presentacion('PIMIENTA', 'ESP', 10, 100);
+        $viaje = app(\App\Services\ViajeCamionService::class)
+            ->cargar(['ruta_id' => Ruta::factory()->create()->id, 'lineas' => [$esp->id => ['surtido' => 40]]]);
+
+        $this->get("/inventario/productos-terminados/{$esp->producto_id}/eliminar")->assertOk()
+            ->assertSee('No se puede eliminar ahora')
+            ->assertSee($viaje->numero);
+
+        $this->delete("/inventario/productos-terminados/{$esp->producto_id}", ['confirmar' => 1])
+            ->assertSessionHas('error');
+        $this->assertNotNull($esp->fresh());
+    }
+
+    #[Test]
+    public function el_listado_siempre_ofrece_eliminar(): void
+    {
+        $pt = $this->presentacion('ROMERO', 'ESP', 8, 100);
+
+        $this->get('/inventario/productos-terminados')->assertOk()
+            ->assertSee(route('inventario.productos-terminados.eliminar', $pt->producto_id), false);
+    }
 }

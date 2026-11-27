@@ -118,20 +118,13 @@
                                             <i class="fas fa-edit w-4 text-center text-purple-300"></i>
                                             Editar
                                         </a>
-                                        @unless ($producto->presentaciones->contains(fn ($pt) => $pt->stock_disponible() !== 0 || $pt->movimientos_exists))
-                                            <div class="border-t border-white/10">
-                                                <form method="POST" action="{{ route('inventario.productos-terminados.destroy', $producto) }}"
-                                                      onsubmit="return confirm('¿Eliminar este producto y sus presentaciones?')">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit"
-                                                            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-300 hover:bg-red-500/10 transition-colors">
-                                                        <i class="fas fa-trash w-4 text-center"></i>
-                                                        Eliminar
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        @endunless
+                                        <div class="border-t border-white/10">
+                                            <a href="{{ route('inventario.productos-terminados.eliminar', $producto) }}"
+                                               class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-300 hover:bg-red-500/10 transition-colors">
+                                                <i class="fas fa-trash w-4 text-center"></i>
+                                                Eliminar
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </td>

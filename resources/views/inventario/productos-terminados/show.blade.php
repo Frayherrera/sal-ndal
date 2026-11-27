@@ -16,10 +16,16 @@
                 · <span class="{{ $producto->activo ? 'text-green-300' : 'text-gray-300' }}">{{ $producto->activo ? 'Activo' : 'Inactivo' }}</span>
             </p>
         </div>
-        <a href="{{ route('inventario.productos-terminados.edit', $producto) }}"
-           class="flex items-center gap-2 bg-purple-500/20 text-purple-300 px-4 py-2 rounded-xl font-medium hover:bg-purple-500/30 transition-colors">
-            <i class="fas fa-edit"></i> Editar
-        </a>
+        <div class="flex items-center gap-2">
+            <a href="{{ route('inventario.productos-terminados.edit', $producto) }}"
+               class="flex items-center gap-2 bg-purple-500/20 text-purple-300 px-4 py-2 rounded-xl font-medium hover:bg-purple-500/30 transition-colors">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            <a href="{{ route('inventario.productos-terminados.eliminar', $producto) }}"
+               class="flex items-center gap-2 bg-red-500/15 text-red-300 px-4 py-2 rounded-xl font-medium hover:bg-red-500/25 transition-colors">
+                <i class="fas fa-trash"></i> Eliminar
+            </a>
+        </div>
     </div>
 
     <!-- Una tarjeta por presentación -->

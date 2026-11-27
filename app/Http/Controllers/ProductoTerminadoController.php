@@ -24,7 +24,7 @@ class ProductoTerminadoController extends Controller
 
     public function index(): View
     {
-        $productos = Producto::with(['presentaciones' => fn ($q) => $q->withExists('movimientos'), 'presentaciones.inventario'])->orderBy('nombre')->get();
+        $productos = Producto::with('presentaciones.inventario')->orderBy('nombre')->get();
 
         if (request('sort') === 'stock') {
             $productos = $productos->sortBy(fn (Producto $p) => $p->stock(), SORT_REGULAR, request('dir') !== 'asc')->values();
@@ -101,13 +101,31 @@ class ProductoTerminadoController extends Controller
         return back()->with('success', 'Estado actualizado.');
     }
 
-    public function destroy(Producto $producto): RedirectResponse
+    /** Pantalla de confirmación: muestra el historial que se borrará. */
+    public function confirmarEliminar(Producto $producto): View
     {
+        $producto->load('presentaciones.inventario');
+        $resumen = $this->service->resumenEliminacion($producto);
+
+        return view('inventario.productos-terminados.eliminar', compact('producto', 'resumen'));
+    }
+
+    public function destroy(Request $request, Producto $producto): RedirectResponse
+    {
+        // Con historial se exige marcar la casilla de confirmación
+        if ($this->service->resumenEliminacion($producto)['historial']) {
+            $request->validate(
+                ['confirmar' => 'accepted'],
+                ['confirmar.accepted' => 'Marca la casilla para confirmar que se borrará el historial.'],
+            );
+        }
+
         try {
+            $nombre = $producto->nombre;
             $this->service->eliminarProducto($producto);
 
             return redirect()->route('inventario.productos-terminados.index')
-                ->with('success', 'Producto eliminado.');
+                ->with('success', "Producto \"{$nombre}\" eliminado con todo su historial.");
         } catch (RuntimeException $e) {
             return redirect()->route('inventario.productos-terminados.index')
                 ->with('error', $e->getMessage());

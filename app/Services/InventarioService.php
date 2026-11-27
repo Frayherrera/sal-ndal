@@ -13,7 +13,7 @@ class InventarioService
 {
     public function resumen(): array
     {
-        $materiasPrimasActivas = MateriaPrima::where('activo', true)->get();
+        $materiasPrimasActivas = MateriaPrima::where('activo', true)->with('inventario')->get();
 
         $stockMateriaPrimaKg = $materiasPrimasActivas->sum(fn ($mp) => $mp->stock_kg());
 

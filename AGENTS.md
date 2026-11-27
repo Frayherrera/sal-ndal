@@ -54,7 +54,7 @@ Uses new `@tailwindcss/vite` plugin. CSS entry `resources/css/app.css` uses v4 s
 - `@source` for content paths
 - `@theme` for design tokens
 
-**Note:** `welcome.blade.php` also loads Tailwind via CDN `<script>` — mixed approach, may cause conflicts.
+**Tailwind de las vistas Blade:** ya no se usa el CDN de desarrollo (`cdn.tailwindcss.com`, compilaba el CSS en el navegador en cada página y era la principal causa de lentitud en celulares). Se compila **Tailwind 3.4** (misma versión que servía el CDN, para no cambiar el aspecto) con `npm run build:css` → `public/css/tailwind.css` (config `tailwind.config.cjs`, entrada `resources/css/tailwind.css`, paquete con alias `tailwindcss3`). **Hay que correrlo y hacer commit del CSS cada vez que se usen clases nuevas.** Se incluye con `partials/tailwind` justo antes de `</head>` (ahí lo inyectaba el CDN; algunas clases dependen de ganar en ese orden) y las fuentes/Font Awesome con `partials/estilos-base` sin bloquear el pintado. La entrada v4 (`resources/css/app.css` vía Vite) no la usan las vistas.
 
 ## PWA Setup
 
@@ -72,7 +72,7 @@ Arquitectura **Controller → Service → Model** (sin Livewire ni Alpine; JS pl
 **Tablas (migraciones `2026_08_30_*`):**
 - `materias_primas` — CRUD con `unidad_base` (kg/g) y `stock_minimo`
 - `productos` (migración `2026_11_27_000001`) — producto comercial: `nombre` (único), `activo`. Agrupa sus presentaciones.
-- `producto_terminados` — cada fila es una **presentación** (el SKU con stock, receta, kardex y camión propios): `producto_id`, línea en `categoria` (`B2C` | `ESP`, ver `ProductoTerminado::LINEAS`), `peso_neto`, `precio_venta` (paquete), `stock_minimo` (u), `codigo`. Una línea puede tener varias presentaciones distinguidas por peso (p. ej. Bicarbonato Especial 35 g / 250 g / 450 g). `nombre` se mantiene igual al del producto (lo sincroniza `ProductoTerminadoService::guardarProducto()`); si se crea una presentación sin `producto_id`, el hook `creating` usa o crea el producto con ese nombre. Para mostrarla usar `etiqueta()` («Especial 20 g») o `nombreCompleto()` («COMINO MOLIDO · Especial 20 g»), y el scope `ordenado()`. La pantalla `/inventario/productos-terminados` trabaja por **Producto** (listado con columnas B2C / Especial en paquetes, crear/editar con filas `presentaciones[i][...]`, detalle con una tarjeta por presentación y kardex con `?presentacion=id`). Quitar una presentación del formulario la borra si nunca se usó; si tiene historial, la desactiva. Los selectores de presentación usan el parcial `inventario/_opciones-presentaciones` (`<optgroup>` por producto) y el cargue/cierre del camión agrupa las filas por producto.
+- `producto_terminados` — cada fila es una **presentación** (el SKU con stock, receta, kardex y camión propios): `producto_id`, línea en `categoria` (`B2C` | `ESP`, ver `ProductoTerminado::LINEAS`), `peso_neto`, `precio_venta` (paquete), `stock_minimo` (u), `codigo`. Una línea puede tener varias presentaciones distinguidas por peso (p. ej. Bicarbonato Especial 35 g / 250 g / 450 g). `nombre` se mantiene igual al del producto (lo sincroniza `ProductoTerminadoService::guardarProducto()`); si se crea una presentación sin `producto_id`, el hook `creating` usa o crea el producto con ese nombre. Para mostrarla usar `etiqueta()` («Especial 20 g») o `nombreCompleto()` («COMINO MOLIDO · Especial 20 g»), y el scope `ordenado()`. La pantalla `/inventario/productos-terminados` trabaja por **Producto** (listado con columnas B2C / Especial en paquetes, crear/editar con filas `presentaciones[i][...]`, detalle con una tarjeta por presentación y kardex con `?presentacion=id`). Quitar una presentación del formulario la borra si nunca se usó; si tiene historial, la desactiva. **Eliminar un producto** (menú del listado o botón del detalle) pasa por la confirmación `/{producto}/eliminar`, que muestra lo que se perderá (`ProductoTerminadoService::resumenEliminacion()`): `eliminarProducto()` borra el producto con sus presentaciones **y todo su historial** (kardex, receta, inventario, líneas de viajes del camión, de ventas antiguas y de conteos). Con historial exige la casilla `confirmar`; se bloquea si alguna presentación va en un viaje en ruta. Es la excepción a «anular, nunca borrar», pedida por el usuario. Los selectores de presentación usan el parcial `inventario/_opciones-presentaciones` (`<optgroup>` por producto) y el cargue/cierre del camión agrupa las filas por producto.
 - `inventario_materia_prima` — snapshot 1:1: `stock_gramos` (BIGINT, gramos), `costo_promedio`
 - `inventario_producto_terminado` — snapshot 1:1: `disponible`, `comprometido` (unidades)
 - `movimientos_inventario` — **kardex** (morph `origen`: MP/PT), `tipo`, `direccion`, `saldo`, `documento`, `movimiento_original_id`, `conteo_fisico_id`
@@ -267,6 +267,7 @@ Diseño común para los reportes descargables (hoy ventas y gastos), con `barryv
   - `tests/Feature/TelegramAsistenteIATest.php` — asistente con IA (modelo simulado): consultas, registros con confirmación, errores, memoria, límite gratuito, deduplicación y cliente de Gemini
   - `tests/Unit/ViajeCamionServiceTest.php` — camión: paquetes ↔ unidades, cargue descuenta bodega, cierre calcula vendido, rotación de rutas, bajar a bodega, validaciones, anulación, promedio y resultado del viaje
   - `tests/Feature/CamionFeatureTest.php` — camión vía pantallas: rutas, flujo semanal completo, errores, anulación y tipos ocultos en Movimientos
+  - `tests/Feature/ConsultasListadosTest.php` — las pantallas principales no hacen consultas N+1 (el número de consultas no crece con los datos; la base de producción es RDS)
   - `tests/Feature/ViewsSmokeTest.php` — smoke test de render de todas las vistas (incluyendo recetas, producción, clientes, ventas y gastos)
 
 **Importante:** El caché de rutas/config (`bootstrap/cache/routes-v7.php`, `config.php`) se regenera apuntando a MySQL RDS y predata a los cambios. Antes de correr tests/artisan localmente conviene limpiarlo (`php artisan config:clear` + `php artisan route:clear`) — el script `composer test` ya hace `config:clear`.
@@ -288,7 +289,7 @@ Diseño común para los reportes descargables (hoy ventas y gastos), con `barryv
 - **Tipografía:** Figtree (vía fonts.bunny.net)
 - **Componentes:** Bordes redondeados (`rounded-xl`, `rounded-2xl`), sombras con color (`shadow-blue-500/30`)
 - **Animaciones:** `fadeInUp` para entrada de elementos
-- **Tailwind:** Carga vía CDN (`<script src="https://cdn.tailwindcss.com">`)
+- **Tailwind:** CSS compilado `public/css/tailwind.css` (`npm run build:css`), no el CDN
 
 **Archivos de referencia:** `welcome.blade.php`, `auth/login.blade.php`
 
