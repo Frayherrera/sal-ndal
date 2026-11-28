@@ -72,6 +72,8 @@ Route::middleware('auth')->group(function () {
         ->name('inventario.productos-terminados.toggle');
     Route::get('inventario/productos-terminados/{producto}/eliminar', [ProductoTerminadoController::class, 'confirmarEliminar'])
         ->name('inventario.productos-terminados.eliminar');
+    Route::post('inventario/productos-terminados/presentaciones/{presentacion}/ajustar-stock', [ProductoTerminadoController::class, 'ajustarStock'])
+        ->name('inventario.productos-terminados.ajustar-stock');
 
     // Movimientos / Kardex
     Route::get('inventario/movimientos', [MovimientoInventarioController::class, 'index'])

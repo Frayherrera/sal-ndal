@@ -6,6 +6,7 @@ use App\Models\Producto;
 use App\Models\ProductoTerminado;
 use App\Services\ProductoTerminadoService;
 use App\Services\ReporteInventarioService;
+use App\Support\Paquetes;
 use App\Support\PdfReporte;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,6 +100,33 @@ class ProductoTerminadoController extends Controller
         $this->service->toggleProducto($producto);
 
         return back()->with('success', 'Estado actualizado.');
+    }
+
+    /** Ajuste manual del stock de una presentación (queda en el kardex). */
+    public function ajustarStock(Request $request, ProductoTerminado $presentacion): RedirectResponse
+    {
+        $data = $request->validate([
+            'paquetes' => ['nullable', 'integer', 'min:0'],
+            'sueltas' => ['nullable', 'integer', 'min:0'],
+            'motivo' => ['required', 'string', 'max:500'],
+        ], [
+            'motivo.required' => 'Escribe el motivo del ajuste.',
+        ]);
+
+        $nuevo = Paquetes::aUnidades((int) ($data['paquetes'] ?? 0), (int) ($data['sueltas'] ?? 0));
+        $anterior = $presentacion->stock_disponible();
+
+        try {
+            $movimiento = $this->service->ajustarStock($presentacion, $nuevo, $data['motivo']);
+        } catch (RuntimeException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        $volver = redirect()->route('inventario.productos-terminados.show', [$presentacion->producto_id, 'presentacion' => $presentacion->id]);
+
+        return $movimiento
+            ? $volver->with('success', "Stock de {$presentacion->nombreCompleto()} ajustado de ".Paquetes::texto($anterior).' a '.Paquetes::texto($nuevo).'.')
+            : $volver->with('success', 'El stock ya era '.Paquetes::texto($nuevo).'; no se registró ningún ajuste.');
     }
 
     /** Pantalla de confirmación: muestra el historial que se borrará. */

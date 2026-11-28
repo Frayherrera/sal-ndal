@@ -278,6 +278,43 @@ class ProductoPresentacionesTest extends TestCase
     }
 
     #[Test]
+    public function ajustar_stock_registra_la_diferencia_en_el_kardex(): void
+    {
+        $esp = $this->presentacion('ANIS', 'ESP', 4, 245); // 12 p + 5 u
+        $url = "/inventario/productos-terminados/presentaciones/{$esp->id}/ajustar-stock";
+
+        $this->get("/inventario/productos-terminados/{$esp->producto_id}?presentacion={$esp->id}")->assertOk()
+            ->assertSee('Ajustar stock')
+            ->assertSee('name="paquetes" min="0" step="1" class="input-glass"', false);
+
+        // Baja a 10 p: salida de 45 u
+        $this->post($url, ['paquetes' => 10, 'sueltas' => 0, 'motivo' => 'Conteo de bodega'])
+            ->assertRedirect(route('inventario.productos-terminados.show', [$esp->producto_id, 'presentacion' => $esp->id]))
+            ->assertSessionHas('success');
+        $this->assertSame(200, $esp->fresh()->stock_disponible());
+        $mov = $esp->movimientos()->latest('id')->first();
+        $this->assertSame('ajuste_negativo', $mov->tipo);
+        $this->assertSame(45, (int) $mov->cantidad);
+        $this->assertSame(200, (int) $mov->saldo);
+        $this->assertSame('AJUSTE-MANUAL', $mov->documento);
+        $this->assertSame('Conteo de bodega', $mov->motivo);
+
+        // Sube a 15 p + 3 u: entrada de 103 u
+        $this->post($url, ['paquetes' => 15, 'sueltas' => 3, 'motivo' => 'Se encontraron cajas']);
+        $this->assertSame(303, $esp->fresh()->stock_disponible());
+        $this->assertSame('ajuste_positivo', $esp->movimientos()->latest('id')->value('tipo'));
+
+        // Mismo valor: no registra nada
+        $this->post($url, ['paquetes' => 15, 'sueltas' => 3, 'motivo' => 'igual']);
+        $this->assertSame(2, $esp->movimientos()->count());
+
+        // Motivo obligatorio y sin negativos
+        $this->post($url, ['paquetes' => 1])->assertSessionHasErrors('motivo');
+        $this->post($url, ['paquetes' => -1, 'motivo' => 'x'])->assertSessionHasErrors('paquetes');
+        $this->assertSame(303, $esp->fresh()->stock_disponible());
+    }
+
+    #[Test]
     public function el_listado_siempre_ofrece_eliminar(): void
     {
         $pt = $this->presentacion('ROMERO', 'ESP', 8, 100);

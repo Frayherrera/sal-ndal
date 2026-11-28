@@ -108,6 +108,31 @@ class ProductoTerminadoService
     }
 
     /** Una presentación nunca usada (sin kardex, camión, ventas ni conteos) se puede borrar. */
+    /**
+     * Fija el stock de bodega de una presentación a mano. Registra en el kardex un
+     * ajuste_positivo / ajuste_negativo por la diferencia (documento AJUSTE-MANUAL).
+     * Devuelve el movimiento, o null si el stock ya era ese.
+     */
+    public function ajustarStock(ProductoTerminado $pt, int $nuevoStock, string $motivo): ?MovimientoInventario
+    {
+        if ($nuevoStock < 0) {
+            throw ValidationException::withMessages(['paquetes' => 'El stock no puede ser negativo.']);
+        }
+
+        $diferencia = $nuevoStock - $pt->stock_disponible();
+        if ($diferencia === 0) {
+            return null;
+        }
+
+        return app(MovimientoInventarioService::class)->registrar([
+            'tipo' => $diferencia > 0 ? 'ajuste_positivo' : 'ajuste_negativo',
+            'origen' => $pt,
+            'cantidad' => abs($diferencia),
+            'documento' => 'AJUSTE-MANUAL',
+            'motivo' => $motivo,
+        ]);
+    }
+
     public function puedeEliminarse(ProductoTerminado $pt): bool
     {
         return ! $pt->movimientos()->exists()

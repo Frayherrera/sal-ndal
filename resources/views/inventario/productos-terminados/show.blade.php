@@ -72,6 +72,47 @@
                     </a>
                 </div>
 
+                <!-- Ajuste manual del stock: queda en el kardex como ajuste -->
+                @php
+                    [$paqActual, $suelActual] = Paquetes::separar(max(0, $seleccionada->stock_disponible()));
+                    $abrirAjuste = $errors->hasAny(['paquetes', 'sueltas', 'motivo']);
+                @endphp
+                <details class="mt-6 border-t border-white/10 pt-5 group" @if ($abrirAjuste) open @endif>
+                    <summary class="flex items-center justify-between cursor-pointer list-none">
+                        <h3 class="text-sm font-semibold text-white/80"><i class="fas fa-pen-to-square text-amber-300 mr-1"></i> Ajustar stock</h3>
+                        <i class="fas fa-chevron-down text-white/40 text-xs transition-transform group-open:rotate-180"></i>
+                    </summary>
+                    <form method="POST" action="{{ route('inventario.productos-terminados.ajustar-stock', $seleccionada) }}" class="mt-4" id="formAjuste"
+                          data-actual="{{ $seleccionada->stock_disponible() }}">
+                        @csrf
+                        <p class="text-white/40 text-xs mb-3">Escribe el stock real en bodega. Se registra la diferencia en el kardex.</p>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="ajustePaquetes" class="block text-xs text-white/60 mb-1">Paquetes</label>
+                                <input type="number" id="ajustePaquetes" name="paquetes" min="0" step="1" class="input-glass"
+                                       value="{{ old('paquetes', $paqActual) }}">
+                            </div>
+                            <div>
+                                <label for="ajusteSueltas" class="block text-xs text-white/60 mb-1">Unidades sueltas</label>
+                                <input type="number" id="ajusteSueltas" name="sueltas" min="0" step="1" class="input-glass"
+                                       value="{{ old('sueltas', $suelActual) }}">
+                            </div>
+                        </div>
+                        @error('paquetes') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+                        <p id="ajusteDiferencia" class="text-xs text-white/50 mt-2">Sin cambios</p>
+                        <div class="mt-3">
+                            <label for="ajusteMotivo" class="block text-xs text-white/60 mb-1">Motivo *</label>
+                            <input type="text" id="ajusteMotivo" name="motivo" maxlength="500" required class="input-glass"
+                                   placeholder="Ej: conteo de bodega, producto dañado…" value="{{ old('motivo') }}">
+                            @error('motivo') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
+                        </div>
+                        <button type="submit"
+                                class="mt-4 w-full flex items-center justify-center gap-2 bg-amber-500/20 text-amber-200 px-4 py-2.5 rounded-xl font-medium hover:bg-amber-500/30 transition-colors">
+                            <i class="fas fa-check"></i> Guardar ajuste
+                        </button>
+                    </form>
+                </details>
+
                 <div class="mt-6 border-t border-white/10 pt-5">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="text-sm font-semibold text-white/80">Receta (por unidad)</h3>
@@ -144,3 +185,32 @@
         </div>
     @endif
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    // Muestra en vivo cuánto se suma o resta con el ajuste
+    var form = document.getElementById('formAjuste');
+    if (!form) return;
+    var actual = parseInt(form.dataset.actual, 10) || 0;
+    var paq = document.getElementById('ajustePaquetes');
+    var sue = document.getElementById('ajusteSueltas');
+    var salida = document.getElementById('ajusteDiferencia');
+    var texto = function (u) {
+        var p = Math.floor(u / 20), s = u % 20;
+        if (!p) return s + ' u';
+        return s ? p + ' p + ' + s + ' u' : p + ' p';
+    };
+    var calcular = function () {
+        var nuevo = (parseInt(paq.value, 10) || 0) * 20 + (parseInt(sue.value, 10) || 0);
+        var dif = nuevo - actual;
+        salida.className = 'text-xs mt-2 ' + (dif > 0 ? 'text-green-300' : dif < 0 ? 'text-red-300' : 'text-white/50');
+        salida.textContent = dif === 0 ? 'Sin cambios'
+            : (dif > 0 ? 'Entrada de ' : 'Salida de ') + texto(Math.abs(dif)) + ' (nuevo stock: ' + texto(nuevo) + ')';
+    };
+    paq.addEventListener('input', calcular);
+    sue.addEventListener('input', calcular);
+    calcular();
+})();
+</script>
+@endpush
